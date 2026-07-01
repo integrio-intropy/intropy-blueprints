@@ -1,0 +1,53 @@
+using {{ .name }}.Process.Steps;
+
+namespace {{ .name }}.Process;
+
+public class OrderSendPipelineBuilder
+{
+    private OrderDeserializeStep? _deserializer;
+    private OrderValidateStep? _validator;
+    private OrderTransformStep? _transformer;
+    private OrderSerializeStep? _serializer;
+    private OrderSendStep? _sender;
+
+    public OrderSendPipelineBuilder WithDeserializer(OrderDeserializeStep deserializer)
+    {
+        _deserializer = deserializer;
+        return this;
+    }
+
+    public OrderSendPipelineBuilder WithValidator(OrderValidateStep validator)
+    {
+        _validator = validator;
+        return this;
+    }
+
+    public OrderSendPipelineBuilder WithTransformer(OrderTransformStep transformer)
+    {
+        _transformer = transformer;
+        return this;
+    }
+
+    public OrderSendPipelineBuilder WithSerializer(OrderSerializeStep serializer)
+    {
+        _serializer = serializer;
+        return this;
+    }
+
+    public OrderSendPipelineBuilder WithSender(OrderSendStep sender)
+    {
+        _sender = sender;
+        return this;
+    }
+
+    public OrderSendPipeline Build()
+    {
+        if (_deserializer is null) throw new InvalidOperationException($"{nameof(OrderDeserializeStep)} must be configured");
+        if (_validator is null) throw new InvalidOperationException($"{nameof(OrderValidateStep)} must be configured");
+        if (_transformer is null) throw new InvalidOperationException($"{nameof(OrderTransformStep)} must be configured");
+        if (_serializer is null) throw new InvalidOperationException($"{nameof(OrderSerializeStep)} must be configured");
+        if (_sender is null) throw new InvalidOperationException($"{nameof(OrderSendStep)} must be configured");
+
+        return new OrderSendPipeline(_deserializer, _validator, _transformer, _serializer, _sender);
+    }
+}

@@ -1,0 +1,48 @@
+# Agent Instructions
+
+This project is an ASP.NET Minimal API sample using Dapr pub/sub with the in-memory component.
+
+## Project overview
+
+- Framework: .NET 10
+- App type: ASP.NET Core Minimal API
+- Dapr package: `Dapr.AspNetCore`
+- Pub/sub component: `pubsub`
+- Topic: `messages`
+
+## Important files
+
+- `src/Program.cs` - defines the Minimal API endpoints and Dapr subscription.
+- `local/dapr-components/pubsub.yaml` - configures the Dapr in-memory pub/sub component.
+- `src/{{ .name }}.http` - contains sample HTTP requests.
+- `README.md` - contains run instructions.
+
+## Development notes
+
+- Keep the API minimal and focused on the Dapr pub/sub flow.
+- Use `DaprClient.PublishEventAsync` to publish messages.
+- Use `.WithTopic("pubsub", "messages")` for subscribed endpoints.
+- Keep component names in sync between `src/Program.cs` and `local/dapr-components/pubsub.yaml`.
+
+## Build and run
+
+Build:
+
+```bash
+dotnet build ./src
+```
+
+Run with Dapr:
+
+```bash
+dapr run \
+  --app-id {{ .appId }} \
+  --app-port 5000 \
+  --dapr-http-port 3500 \
+  --resources-path ./local/dapr-components \
+  -- dotnet run --project ./src --urls http://localhost:5000
+```
+
+## Testing
+
+Use `src/{{ .name }}.http` to post a sample message to `POST /publish`.

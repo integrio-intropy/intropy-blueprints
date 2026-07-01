@@ -1,0 +1,24 @@
+using System.Text;
+using {{ .name }}.Configuration;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Send;
+
+public class Sender(IFileAdapter fileAdapter) : SendStep<Context>
+{
+    public override {{ if not .empty }}async {{ end }}Task<(BusinessStepResult<string> Result, Context Context)> ExecuteAsync(
+        string input, Context context, CancellationToken ct)
+    {
+{{- if .empty }}
+        throw new NotImplementedException();
+{{- else }}
+        var orderId = context.Metadata[Constants.ContextKeyOrderId];
+        var fileName = $"{orderId}.json";
+        await fileAdapter.WriteAsync(fileName, input, Encoding.UTF8);
+        return (new BusinessStepResult<string>.Success(fileName), context);
+{{- end }}
+    }
+}

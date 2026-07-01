@@ -1,0 +1,22 @@
+using System.Text.Json;
+using {{ .name }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Send;
+
+public class Serializer : SerializeStep<Out, Context>
+{
+    public override Task<(TechnicalStepResult<string> Result, Context Context)> ExecuteAsync(
+        Out input, Context context, CancellationToken ct)
+    {
+{{- if .empty }}
+        throw new NotImplementedException();
+{{- else }}
+        var json = JsonSerializer.Serialize(input);
+        return Task.FromResult<(TechnicalStepResult<string>, Context)>(
+            (new TechnicalStepResult<string>.Success(json), context));
+{{- end }}
+    }
+}

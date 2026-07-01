@@ -1,0 +1,20 @@
+using {{ .name }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Send;
+
+public class Extractor : ExtractStep<In, Context>
+{
+    public override Task<(BusinessStepResult<In> Result, Context Context)> ExecuteAsync(
+        In input, Context context, CancellationToken ct)
+    {
+{{- if .empty }}
+        throw new NotImplementedException();
+{{- else }}
+        return Task.FromResult<(BusinessStepResult<In>, Context)>(
+            (new BusinessStepResult<In>.Success(input), context));
+{{- end }}
+    }
+}

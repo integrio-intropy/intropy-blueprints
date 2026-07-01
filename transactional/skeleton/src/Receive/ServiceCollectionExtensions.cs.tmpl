@@ -1,0 +1,30 @@
+using Dapr.Client;
+using {{ .name }}.Configuration;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration;
+using Intropy.Framework.Core.Configuration;
+using Intropy.Framework.Hosting.TransactionalIntegration.Job;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace {{ .name }}.Receive;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddReceivePipeline(this IServiceCollection services)
+    {
+        services.AddReceivePipeline<Context>("{{ .name }}.Receive", (builder, provider) =>
+        {
+            var sourceAdapter = provider.GetRequiredKeyedService<IFileAdapter>(Constants.SourceFileAdapterKey);
+            var daprClient = provider.GetRequiredService<DaprClient>();
+            var tiOptions = provider.GetRequiredService<TransactionalIntegrationOptions>();
+            var frameworkOptions = provider.GetRequiredService<FrameworkOptions>();
+
+            return builder
+                .WithReceiver(new Receiver(sourceAdapter))
+                .WithEnqueuer(new Enqueuer(daprClient, tiOptions, frameworkOptions))
+                .WithCompleter(new Completer(sourceAdapter));
+        });
+        return services;
+    }
+}

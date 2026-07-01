@@ -1,0 +1,63 @@
+using Dapr.Client;
+using {{ .name }}.Configuration;
+using {{ .name }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Ingest;
+
+public static class Endpoints
+{
+    public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapPost("/subscribe", async (
+                HttpContext ctx,
+                ISendPipeline<Context> sendPipeline,
+                ILogger<Program> logger,
+                CancellationToken cancellationToken) =>
+            {
+                logger.LogInformation("Received message");
+                using var ms = new MemoryStream();
+                await ctx.Request.Body.CopyToAsync(ms, cancellationToken);
+                var payload = new ReadOnlyMemory<byte>(ms.ToArray());
+
+                var pipelineContext = new Context(new Dictionary<string, string>());
+                var (result, _) = await sendPipeline.Execute(payload, pipelineContext, cancellationToken);
+
+                return result switch
+                {
+                    StepResult<string>.Success =>
+                        Results.Ok(new { status = "SUCCESS" }),
+                    StepResult<string>.BusinessFailure =>
+                        Results.Ok(new { status = "DROP" }),
+                    StepResult<string>.TechnicalFailure =>
+                        Results.Ok(new { status = "RETRY" }),
+                    StepResult<string>.Cancelled or StepResult<string>.Aborted =>
+                        Results.Ok(new { status = "DROP" }),
+                    _ => Results.Ok(new { status = "RETRY" })
+                };
+            })
+            .WithTopic(Constants.PubSubName, Constants.TopicName)
+            .WithName("subscribeMessage")
+            .WithDisplayName("Subscribe Message");
+
+        endpoints.MapPost("/publish", async (
+                OrderIn order,
+                DaprClient daprClient,
+                ILogger<Program> logger,
+                CancellationToken cancellationToken) =>
+            {
+                await daprClient.PublishEventAsync(Constants.PubSubName, Constants.TopicName, order, cancellationToken);
+
+                logger.LogInformation("Published order {OrderId} to {PubSub}/{Topic}",
+                    order.OrderId, Constants.PubSubName, Constants.TopicName);
+
+                return Results.Accepted($"/orders/{order.OrderId}", order);
+            })
+            .WithName("publishOrder")
+            .WithDisplayName("Publish Order");
+
+        return endpoints;
+    }
+}

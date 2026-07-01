@@ -1,0 +1,26 @@
+apiVersion: intropy.dev/v1
+kind: Template
+metadata:
+  name: dapr-minimal-api
+  title: Dapr Minimal API
+  description: ASP.NET Minimal API sample with a Dapr pub/sub trigger and a transactional send pipeline.
+  tags:
+    - example
+    - dotnet
+    - dapr
+  labels:
+    intropy.io/template-level: example
+
+spec:
+  parameters:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        title: Project name
+        description: PascalCase identifier used for the .NET project, root namespace, and assembly. Dot-separated segments are allowed for nested namespaces (e.g. MyApi or Int1055.MyApi).
+        pattern: "^[A-Z][A-Za-z0-9]*(\\.[A-Z][A-Za-z0-9]*)*$"
+  values:
+    appId: '{{ .name | kebabcase | replace "." "-" }}'

@@ -1,0 +1,61 @@
+# Agent Instructions
+
+This project is a .NET transactional integration job built on the Intropy
+framework. It reads files from a local Dapr file binding, publishes each one
+onto an in-memory Dapr pub/sub topic, and processes them through a VETER send
+pipeline that writes the transformed result to a second local file binding.
+
+## Project overview
+
+- Framework: .NET 10
+- App type: Console job (no web endpoints)
+- Runner: `Intropy.Framework.Hosting.TransactionalIntegration.Job.TransactionalIntegrationRunner`
+- Pub/sub component: `pubsub` (in-memory)
+- Topic: `orders`
+- Source binding: `inbound-storage` (Dapr local storage, rootPath `/tmp/{{ .name | kebabcase }}/inbound`)
+- Destination binding: `outbound-storage` (Dapr local storage, rootPath `/tmp/{{ .name | kebabcase }}/outbound`)
+
+## Important files
+
+- `src/Program.cs` - DI wiring and entrypoint that runs the `TransactionalIntegrationRunner`.
+- `src/Configuration/Constants.cs` - component names, keyed-adapter keys, context metadata keys.
+- `src/Receive/` - source listing and the receive pipeline steps (`Receiver`, `Enqueuer`, `Completer`).
+- `src/Send/` - the VETER send pipeline steps.
+- `local/dapr-components/pubsub.yaml` - in-memory pub/sub component.
+- `local/dapr-components/inbound-storage.yaml` / `outbound-storage.yaml` - Dapr local storage bindings.
+- `local/sample-data/sample-order.json` - sample input to drop into the inbound folder.
+
+## Development notes
+
+- Source and destination `IFileAdapter` instances are registered as keyed singletons
+  (`Constants.SourceFileAdapterKey`, `Constants.DestinationFileAdapterKey`). Inject them
+  via `[FromKeyedServices(...)]` or resolve via `GetRequiredKeyedService<IFileAdapter>(...)`.
+- The receive pipeline runs once per file returned by `ISourceLister`; the send
+  pipeline runs once per pub/sub delivery.
+- Keep `Constants.PubSubName` / `Constants.TopicName` in sync between
+  `Program.cs` (`AddTransactionalIntegration`) and the Dapr component YAML.
+- The send pipeline does not use idempotency or business-incident services in this
+  sample - it is deliberately minimal. Add `.WithIdempotency(...)` and
+  `.WithBusinessIncidents(...)` to the builder in `Send/ServiceCollectionExtensions.cs`
+  once those services are reachable.
+
+## Build and run
+
+Build:
+
+```bash
+dotnet build ./src
+```
+
+Run with Dapr:
+
+```bash
+mkdir -p /tmp/{{ .name | kebabcase }}/inbound /tmp/{{ .name | kebabcase }}/outbound
+cp local/sample-data/sample-order.json /tmp/{{ .name | kebabcase }}/inbound/
+
+dapr run \
+  --app-id {{ .appId }} \
+  --dapr-http-port 3500 \
+  --resources-path ./local/dapr-components \
+  -- dotnet run --project ./src
+```

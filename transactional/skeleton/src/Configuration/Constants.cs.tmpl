@@ -1,0 +1,19 @@
+namespace {{ .name }}.Configuration;
+
+public static class Constants
+{
+    public const string ComponentName = "{{ .name | kebabcase }}";
+    public const string CustomerName = "Entrovia";
+
+    public const string PubSubName = "pubsub";
+    public const string TopicName = "orders";
+
+    public const string InboundBindingName = "inbound-storage";
+    public const string OutboundBindingName = "outbound-storage";
+
+    public const string SourceFileAdapterKey = "source";
+    public const string DestinationFileAdapterKey = "destination";
+
+    public const string ContextKeyFileName = "file_name";
+    public const string ContextKeyOrderId = "order_id";
+}

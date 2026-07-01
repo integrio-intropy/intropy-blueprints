@@ -1,0 +1,27 @@
+using {{ .name }}.Process.Steps;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+using Intropy.Framework.Core.Pipeline.Core;
+
+namespace {{ .name }}.Process;
+
+public class OrderSendPipeline(
+    OrderDeserializeStep deserializer,
+    OrderValidateStep validator,
+    OrderTransformStep transformer,
+    OrderSerializeStep serializer,
+    OrderSendStep sender) : ISendPipeline<Context>
+{
+    public async Task<(StepResult<string> Result, Context Context)> Execute(
+        ReadOnlyMemory<byte> input, Context context, CancellationToken ct = default)
+    {
+        var (result, ctx, _) = await Pipeline.Start(input, context, ct)
+            .AddStep(deserializer)
+            .AddStep(validator)
+            .AddStep(transformer)
+            .AddStep(serializer)
+            .AddStep(sender);
+        return (result, ctx);
+    }
+}

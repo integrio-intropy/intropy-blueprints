@@ -1,0 +1,24 @@
+using {{ .name }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Process.Steps;
+
+public class OrderTransformStep : TransformStep<OrderIn, OrderOut, Context>
+{
+    public override Task<(TechnicalStepResult<OrderOut> Result, Context Context)> ExecuteAsync(
+        OrderIn input, Context context, CancellationToken ct)
+    {
+        var total = input.Lines.Sum(l => l.UnitPrice * l.Quantity);
+        var output = new OrderOut(
+            OrderId: input.OrderId,
+            CustomerId: input.CustomerId,
+            ProcessedAt: DateTimeOffset.UtcNow,
+            TotalAmount: total,
+            Status: "Processed");
+
+        return Task.FromResult<(TechnicalStepResult<OrderOut>, Context)>(
+            (new TechnicalStepResult<OrderOut>.Success(output), context));
+    }
+}

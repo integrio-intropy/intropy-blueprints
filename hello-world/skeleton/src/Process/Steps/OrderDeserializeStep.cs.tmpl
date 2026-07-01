@@ -1,0 +1,19 @@
+using System.Text.Json;
+using {{ .name }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Process.Steps;
+
+public class OrderDeserializeStep : DeserializeStep<OrderIn, Context>
+{
+    public override Task<(BusinessStepResult<OrderIn> Result, Context Context)> ExecuteAsync(
+        ReadOnlyMemory<byte> input, Context context, CancellationToken ct)
+    {
+        var order = JsonSerializer.Deserialize<OrderIn>(input.Span,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        return Task.FromResult<(BusinessStepResult<OrderIn>, Context)>(
+            (new BusinessStepResult<OrderIn>.Success(order), context));
+    }
+}

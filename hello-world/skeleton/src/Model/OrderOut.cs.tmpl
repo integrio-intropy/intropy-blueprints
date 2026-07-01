@@ -1,0 +1,8 @@
+namespace {{ .name }}.Model;
+
+public record OrderOut(
+    string OrderId,
+    string CustomerId,
+    DateTimeOffset ProcessedAt,
+    decimal TotalAmount,
+    string Status);

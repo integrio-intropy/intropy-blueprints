@@ -1,0 +1,28 @@
+using {{ .name }}.Configuration;
+using {{ .name }}.Model;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace {{ .name }}.Send;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddSendPipeline(this IServiceCollection services)
+    {
+        services.AddSendPipeline<In, Out, Context>("{{ .name }}.Send", (builder, provider) =>
+        {
+            var destinationAdapter = provider.GetRequiredKeyedService<IFileAdapter>(Constants.DestinationFileAdapterKey);
+
+            return builder
+                .WithDeserializer(new Deserializer())
+                .WithExtractor(new Extractor())
+                .WithValidator(new Validator())
+                .WithTransformer(new Transformer())
+                .WithSerializer(new Serializer())
+                .WithSender(new Sender(destinationAdapter));
+        });
+        return services;
+    }
+}

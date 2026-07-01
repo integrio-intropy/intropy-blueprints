@@ -1,0 +1,45 @@
+# {{ .name }}
+
+.NET transactional integration job. Polls JSON orders from a local inbound folder,
+publishes them onto an in-memory Dapr pub/sub topic, processes each one through a
+VETER pipeline, and writes the transformed result to a local outbound folder.
+
+## Run
+
+Prepare the working folders and drop the bundled sample order into the inbound folder:
+
+```bash
+mkdir -p /tmp/{{ .name | kebabcase }}/inbound /tmp/{{ .name | kebabcase }}/outbound
+cp local/sample-data/sample-order.json /tmp/{{ .name | kebabcase }}/inbound/
+```
+
+Then run the job:
+
+```bash
+dapr run \
+  --app-id {{ .appId }} \
+  --dapr-http-port 3500 \
+  --resources-path ./local/dapr-components \
+  -- dotnet run --project ./src
+```
+
+The runner picks up the file, publishes it via in-memory pub/sub to topic `orders`,
+runs the send pipeline, writes the transformed JSON to
+`/tmp/{{ .name | kebabcase }}/outbound/<orderId>.json`, and deletes the source file.
+
+## Pipeline
+
+**Receive** (per source file):
+
+1. `Receiver` reads bytes from the inbound binding.
+2. `Enqueuer` publishes the payload to `pubsub` / `orders`.
+3. `Completer` deletes the source file.
+
+**Send** (per pub/sub delivery):
+
+1. `Deserializer` parses the JSON into `In`.
+2. `Extractor` pass-through.
+3. `Validator` enforces required fields and basic business rules.
+4. `Transformer` maps `In` → `Out` and sums the line totals.
+5. `Serializer` serializes back to JSON.
+6. `Sender` writes the JSON to the outbound binding using `<orderId>.json`.

@@ -1,0 +1,10 @@
+namespace {{ .name }}.Configuration;
+
+public static class Constants
+{
+    public const string ComponentName = "{{ .name | kebabcase }}";
+    public const string PubSubName = "pubsub";
+    public const string TopicName = "messages";
+    public const string CustomerName = "Entrovia";
+    public const string LocalStorageBindingName = "local-storage";
+}

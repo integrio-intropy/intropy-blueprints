@@ -1,0 +1,14 @@
+apiVersion: intropy.dev/v1
+kind: Integration
+metadata:
+  name: {{ .name }}
+spec:
+  run:
+    appId: {{ .appId }}
+    daprHttpPort: 3500
+    resourcesPath: ./local/dapr-components
+    command:
+      - dotnet
+      - run
+      - --project
+      - ./src

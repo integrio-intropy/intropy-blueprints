@@ -1,0 +1,46 @@
+using Dapr.Client;
+using {{ .name }}.Ingest;
+using {{ .name }}.Process;
+using {{ .name }}.Process.Steps;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Core.Configuration;
+using Constants = {{ .name }}.Configuration.Constants;
+
+
+var builder = WebApplication.CreateBuilder(args);
+var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
+
+builder.Services.AddDaprClient();
+
+// Observability
+builder.Services.AddLogging();
+
+// Framework services
+builder.Services.AddOpenApi();
+builder.Services.AddIntropyFramework(x =>
+{
+    x.ComponentName = Constants.ComponentName;
+    x.ServiceNamespace = Constants.CustomerName;
+});
+
+builder.Services.AddSingleton<IFileAdapter>(sp =>
+    new LocalFileAdapter(
+        sp.GetRequiredService<DaprClient>(),
+        new FileAdapterOptions(Constants.LocalStorageBindingName)));
+
+builder.Services.AddOrderSendPipeline((pipelineBuilder, sp) => pipelineBuilder
+    .WithDeserializer(new OrderDeserializeStep())
+    .WithValidator(new OrderValidateStep())
+    .WithTransformer(new OrderTransformStep())
+    .WithSerializer(new OrderSerializeStep())
+    .WithSender(new OrderSendStep(sp.GetRequiredService<IFileAdapter>())));
+
+var app = builder.Build();
+
+app.UseCloudEvents();
+
+app.MapEndpoints();
+
+app.MapSubscribeHandler();
+
+app.Run();
