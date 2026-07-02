@@ -29,10 +29,8 @@ public class OrderValidateStep : ValidateStep<OrderIn, Context>
             return "OrderId is required";
         if (string.IsNullOrWhiteSpace(order.CustomerId))
             return "CustomerId is required";
-        if (order.OrderDate > DateTimeOffset.UtcNow)
-            return $"OrderDate {order.OrderDate:O} is in the future";
-        if (order.Lines.Count == 0)
-            return "Order must contain at least one line";
+        if (order.Amount <= 0)
+            return $"Amount {order.Amount} must be greater than zero";
         return null;
     }
 }

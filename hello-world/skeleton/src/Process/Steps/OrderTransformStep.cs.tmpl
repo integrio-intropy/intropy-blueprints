@@ -10,12 +10,11 @@ public class OrderTransformStep : TransformStep<OrderIn, OrderOut, Context>
     public override Task<(TechnicalStepResult<OrderOut> Result, Context Context)> ExecuteAsync(
         OrderIn input, Context context, CancellationToken ct)
     {
-        var total = input.Lines.Sum(l => l.UnitPrice * l.Quantity);
         var output = new OrderOut(
             OrderId: input.OrderId,
             CustomerId: input.CustomerId,
             ProcessedAt: DateTimeOffset.UtcNow,
-            TotalAmount: total,
+            Amount: input.Amount,
             Status: "Processed");
 
         return Task.FromResult<(TechnicalStepResult<OrderOut>, Context)>(

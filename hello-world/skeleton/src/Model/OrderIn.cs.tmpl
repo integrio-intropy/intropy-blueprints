@@ -3,10 +3,4 @@ namespace {{ .name }}.Model;
 public record OrderIn(
     string OrderId,
     string CustomerId,
-    DateTimeOffset OrderDate,
-    IReadOnlyList<OrderLine> Lines);
-
-public record OrderLine(
-    string Sku,
-    int Quantity,
-    decimal UnitPrice);
+    decimal Amount);
