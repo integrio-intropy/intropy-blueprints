@@ -114,6 +114,40 @@ Generated from the `{{ .name }}` blueprint.
 Module: `{{ .module }}`
 ```
 
+## The `agent.md` convention
+
+Every skeleton ships an `agent.md.tmpl` at its root. `agent.md` is the
+scaffolded project's **manifest for agents**: the facts about *this* component
+that no skill can know. It is not a tutorial — generic framework how-to lives
+in the Intropy skills collection (`intropy skills collection add --name
+intropy --ref harbor.intropy.io/skills/index:latest`), which `int create`
+offers to install into `.agents/skills/`.
+
+Rules for authoring `agent.md.tmpl`:
+
+- **Facts only, no teaching.** State what the component is, its component /
+  topic / binding names (with rootPaths and ports), app id, and the key-file
+  map. Do not restate framework conventions (naming-sync rules, builder
+  usage, DI patterns) — those belong to the skills and duplicating them here
+  drifts.
+- **One canonical run path.** If the skeleton ships a `Taskfile.yml`,
+  `task run` is canonical: `agent.md` points at it and briefly says what it
+  does; it never duplicates the underlying `dapr run` command. If there is no
+  Taskfile, the raw `dapr run` command lives in `agent.md` (and `README.md`
+  must agree with it — same ports, same flags).
+- **Project-specific deviations are facts.** Deliberate departures from
+  framework defaults (e.g. "idempotency omitted in this sample; add
+  `.WithIdempotency(...)` in …") belong in a short Development notes section.
+- **One skills pointer.** End with a single "Framework guidance" line
+  pointing at the skills collection — no per-skill routing table.
+- **Section structure:** title + one-liner, Project overview, Important
+  files, Build and run, optional Development notes / Testing, Framework
+  guidance.
+
+The facts in `agent.md` must match the skeleton (component YAML `metadata.name`
+and rootPaths, `Constants.cs` values, Taskfile vars, `.http` ports). When you
+change one, change the others in the same commit.
+
 ## Adding a new blueprint
 
 1. Create the directory: `mkdir -p <name>/skeleton <name>/examples`.

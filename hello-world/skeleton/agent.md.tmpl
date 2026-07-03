@@ -1,28 +1,26 @@
 # Agent Instructions
 
-This project is an ASP.NET Minimal API sample using Dapr pub/sub with the in-memory component.
+This project is an ASP.NET Minimal API integration component using Dapr pub/sub with the in-memory component. It exposes `POST /publish`, and the subscribed endpoint runs the order send pipeline, writing the result to a local storage binding.
 
 ## Project overview
 
 - Framework: .NET 10
 - App type: ASP.NET Core Minimal API
 - Dapr package: `Dapr.AspNetCore`
-- Pub/sub component: `pubsub`
+- App id: `{{ .appId }}`
+- App port: `5001`
+- Pub/sub component: `pubsub` (in-memory)
 - Topic: `messages`
+- Output binding: `local-storage` (Dapr local storage, rootPath `./local/test/out`)
 
 ## Important files
 
-- `src/Program.cs` - defines the Minimal API endpoints and Dapr subscription.
-- `local/dapr-components/pubsub.yaml` - configures the Dapr in-memory pub/sub component.
-- `src/{{ .name }}.http` - contains sample HTTP requests.
-- `README.md` - contains run instructions.
-
-## Development notes
-
-- Keep the API minimal and focused on the Dapr pub/sub flow.
-- Use `DaprClient.PublishEventAsync` to publish messages.
-- Use `.WithTopic("pubsub", "messages")` for subscribed endpoints.
-- Keep component names in sync between `src/Program.cs` and `local/dapr-components/pubsub.yaml`.
+- `src/Program.cs` - DI wiring and framework registration.
+- `src/Configuration/Constants.cs` - component, topic, and binding names.
+- `src/Ingest/Endpoints.cs` - HTTP endpoints and the Dapr subscription.
+- `src/Process/` - the order send pipeline, its builder, and step classes.
+- `local/dapr-components/` - local Dapr component YAMLs (pub/sub, storage binding).
+- `src/{{ .name }}.http` - sample HTTP requests.
 
 ## Build and run
 
@@ -37,12 +35,16 @@ Run with Dapr:
 ```bash
 dapr run \
   --app-id {{ .appId }} \
-  --app-port 5000 \
+  --app-port 5001 \
   --dapr-http-port 3500 \
   --resources-path ./local/dapr-components \
-  -- dotnet run --project ./src --urls http://localhost:5000
+  -- dotnet run --project ./src --urls http://localhost:5001
 ```
 
 ## Testing
 
 Use `src/{{ .name }}.http` to post a sample message to `POST /publish`.
+
+## Framework guidance
+
+How-to knowledge for the Intropy framework (pipelines, blocks, endpoints, Dapr components, testing) lives in the Intropy skills collection under `.agents/skills/`. If it is not installed, run `intropy skills collection add --name intropy --ref harbor.intropy.io/skills/index:latest`.

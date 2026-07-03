@@ -6,26 +6,18 @@ VETER pipeline, and writes the transformed result to a local outbound folder.
 
 ## Run
 
-Prepare the working folders and drop the bundled sample order into the inbound folder:
-
 ```bash
-mkdir -p /tmp/{{ .name | kebabcase }}/inbound /tmp/{{ .name | kebabcase }}/outbound
-cp local/sample-data/sample-order.json /tmp/{{ .name | kebabcase }}/inbound/
+task run
 ```
 
-Then run the job:
-
-```bash
-dapr run \
-  --app-id {{ .appId }} \
-  --dapr-http-port 3500 \
-  --resources-path ./local/dapr-components \
-  -- dotnet run --project ./src
-```
-
+This seeds `./local/storage/inbound` with the bundled sample order, starts the
+local grafana/otel-lgtm observability stack, and runs the job once under Dapr.
 The runner picks up the file, publishes it via in-memory pub/sub to topic `orders`,
 runs the send pipeline, writes the transformed JSON to
-`/tmp/{{ .name | kebabcase }}/outbound/<orderId>.json`, and deletes the source file.
+`./local/storage/outbound/<orderId>.json`, and deletes the source file.
+
+Other tasks: `task build`, `task clean` (remove `./local/storage`), and
+`task lgtm:down` (stop the observability stack). See `Taskfile.yml`.
 
 ## Pipeline
 
