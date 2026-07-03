@@ -114,16 +114,21 @@ Generated from the `{{ .name }}` blueprint.
 Module: `{{ .module }}`
 ```
 
-## The `agent.md` convention
+## The `AGENTS.md` convention
 
-Every skeleton ships an `agent.md.tmpl` at its root. `agent.md` is the
-scaffolded project's **manifest for agents**: the facts about *this* component
-that no skill can know. It is not a tutorial — generic framework how-to lives
-in the Intropy skills collection (`intropy skills collection add --name
-intropy --ref harbor.intropy.io/skills/index:latest`), which `int create`
-offers to install into `.agents/skills/`.
+Every skeleton ships an `AGENTS.md.tmpl` at its root. `AGENTS.md` (per the
+[agents.md](https://agents.md/) standard, auto-loaded by most coding agents)
+is the scaffolded project's **manifest for agents**: the facts about *this*
+component that no skill can know. It is not a tutorial — generic framework
+how-to lives in the Intropy skills collection (`intropy skills collection add
+--name intropy --ref harbor.intropy.io/skills/index:latest`), which
+`int create` offers to install into `.agents/skills/`.
 
-Rules for authoring `agent.md.tmpl`:
+Each skeleton also ships a one-line `CLAUDE.md` containing exactly
+`@AGENTS.md` — Claude Code doesn't auto-load AGENTS.md, so this import gives
+it the same context. Keep it one line; never put content in it.
+
+Rules for authoring `AGENTS.md.tmpl`:
 
 - **Facts only, no teaching.** State what the component is, its component /
   topic / binding names (with rootPaths and ports), app id, and the key-file
@@ -131,9 +136,9 @@ Rules for authoring `agent.md.tmpl`:
   usage, DI patterns) — those belong to the skills and duplicating them here
   drifts.
 - **One canonical run path.** If the skeleton ships a `Taskfile.yml`,
-  `task run` is canonical: `agent.md` points at it and briefly says what it
+  `task run` is canonical: `AGENTS.md` points at it and briefly says what it
   does; it never duplicates the underlying `dapr run` command. If there is no
-  Taskfile, the raw `dapr run` command lives in `agent.md` (and `README.md`
+  Taskfile, the raw `dapr run` command lives in `AGENTS.md` (and `README.md`
   must agree with it — same ports, same flags).
 - **Project-specific deviations are facts.** Deliberate departures from
   framework defaults (e.g. "idempotency omitted in this sample; add
@@ -144,7 +149,7 @@ Rules for authoring `agent.md.tmpl`:
   files, Build and run, optional Development notes / Testing, Framework
   guidance.
 
-The facts in `agent.md` must match the skeleton (component YAML `metadata.name`
+The facts in `AGENTS.md` must match the skeleton (component YAML `metadata.name`
 and rootPaths, `Constants.cs` values, Taskfile vars, `.http` ports). When you
 change one, change the others in the same commit.
 
