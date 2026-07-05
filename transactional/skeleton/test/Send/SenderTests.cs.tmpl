@@ -1,0 +1,37 @@
+using System.Text;
+using {{ .name }}.Configuration;
+using {{ .name }}.Send;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+using NSubstitute;
+
+namespace {{ .name }}.Test.Send;
+
+public class SenderTests
+{
+{{- if .empty }}
+    // Add tests as you implement the pipeline steps.
+{{- else }}
+    [Fact]
+    public async Task ExecuteAsync_WithOrderIdInContext_WritesPayloadToOrderNamedFile()
+    {
+        // Arrange
+        var fileAdapter = Substitute.For<IFileAdapter>();
+        var sender = new Sender(fileAdapter);
+        var context = new Context(new Dictionary<string, string>
+        {
+            [Constants.ContextKeyOrderId] = "ORD-1001"
+        });
+        const string payload = """{"orderId":"ORD-1001"}""";
+
+        // Act
+        var (result, _) = await sender.ExecuteAsync(payload, context, CancellationToken.None);
+
+        // Assert
+        await fileAdapter.Received(1).WriteAsync("ORD-1001.json", payload, Encoding.UTF8);
+        var success = Assert.IsType<BusinessStepResult<string>.Success>(result);
+        Assert.Equal("ORD-1001.json", success.Value);
+    }
+{{- end }}
+}

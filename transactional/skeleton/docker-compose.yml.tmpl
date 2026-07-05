@@ -1,17 +1,24 @@
-# Local observability stack for {{ .name }}.
+# Local stack for {{ .name }}: observability plus the Intropy platform
+# services the job depends on.
 #
-# A single grafana/otel-lgtm container: Grafana + Loki (logs) + Tempo (traces)
-# + Mimir/Prometheus (metrics) behind a built-in OTLP collector. The console
-# job exports to this over OTLP via OTEL_EXPORTER_OTLP_ENDPOINT (see Taskfile
-# `run` task) and the data shows up under the `{{ .name | kebabcase }}` service in Grafana.
+#   lgtm                       Grafana + Loki (logs) + Tempo (traces) + Prometheus
+#                              (metrics) behind a built-in OTLP collector. The job
+#                              exports over OTLP (see Taskfile `run`) and the data
+#                              shows up under the `{{ .name | kebabcase }}` service in Grafana.
+#   platform-services include  Idempotency Service (:8080) and Business Incident
+#                              Service (:8081) with Dapr sidecars and backing
+#                              stores — see local/platform-services/compose.yaml.
 #
-#   task lgtm:up    # start the stack
-#   task run        # run the job; telemetry flows to the collector
-#   task lgtm:down  # stop the stack
+#   task services:up    # start everything
+#   task run            # run the job; telemetry flows to the collector
+#   task services:down  # stop everything
 #
 # Grafana UI:       http://localhost:3000  (anonymous admin, no login)
 # OTLP gRPC ingest: localhost:4317
 # OTLP HTTP ingest: localhost:4318
+
+include:
+  - path: ./local/platform-services/compose.yaml
 
 services:
   lgtm:

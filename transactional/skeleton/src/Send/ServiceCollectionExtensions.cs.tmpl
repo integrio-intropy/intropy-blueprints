@@ -1,5 +1,9 @@
 using {{ .name }}.Configuration;
 using {{ .name }}.Model;
+{{- if not .empty }}
+using Intropy.Contracts.BusinessIncidentService;
+using Intropy.Contracts.IdempotencyService;
+{{- end }}
 using Intropy.Framework.Adapters.File;
 using Intropy.Framework.Blocks.Shared;
 using Intropy.Framework.Blocks.TransactionalIntegration;
@@ -14,6 +18,26 @@ public static class ServiceCollectionExtensions
         services.AddSendPipeline<In, Out, Context>("{{ .name }}.Send", (builder, provider) =>
         {
             var destinationAdapter = provider.GetRequiredKeyedService<IFileAdapter>(Constants.DestinationFileAdapterKey);
+{{- if not .empty }}
+            var idempotencyClient = provider.GetRequiredService<IIdempotencyServiceClient>();
+            var incidentClient = provider.GetRequiredService<IBusinessIncidentServiceClient>();
+
+            return builder
+                .WithDeserializer(new Deserializer())
+                .WithIdempotency(
+                    idempotencyClient,
+                    idExtractor: (order, _) => order.OrderId,
+                    dateExtractor: (order, _) => order.OrderDate)
+                .WithExtractor(new Extractor())
+                .WithValidator(new Validator())
+                .WithTransformer(new Transformer())
+                .WithSerializer(new Serializer())
+                .WithSender(new Sender(destinationAdapter))
+                .WithBusinessIncidents(
+                    incidentClient,
+                    messageIdExtractor: ctx => ctx.Metadata.GetValueOrDefault(Constants.ContextKeyOrderId, "unknown"),
+                    subjectExtractor: ctx => ctx.Metadata.GetValueOrDefault(Constants.ContextKeyOrderId, "unknown"));
+{{- else }}
 
             return builder
                 .WithDeserializer(new Deserializer())
@@ -22,6 +46,7 @@ public static class ServiceCollectionExtensions
                 .WithTransformer(new Transformer())
                 .WithSerializer(new Serializer())
                 .WithSender(new Sender(destinationAdapter));
+{{- end }}
         });
         return services;
     }

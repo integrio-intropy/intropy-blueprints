@@ -1,0 +1,35 @@
+using System.Text.Json;
+using {{ .name }}.Model;
+using {{ .name }}.Send;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .name }}.Test.Send;
+
+public class SerializerTests
+{
+{{- if .empty }}
+    // Add tests as you implement the pipeline steps.
+{{- else }}
+    [Fact]
+    public async Task ExecuteAsync_WithOrder_RoundTripsThroughJson()
+    {
+        // Arrange
+        var serializer = new Serializer();
+        var output = new Out(
+            OrderId: "ORD-1001",
+            CustomerId: "CUST-42",
+            ProcessedAt: new DateTimeOffset(2026, 1, 15, 9, 30, 0, TimeSpan.Zero),
+            TotalAmount: 25.0m,
+            Status: "Processed");
+
+        // Act
+        var (result, _) = await serializer.ExecuteAsync(
+            output, new Context(new Dictionary<string, string>()), CancellationToken.None);
+
+        // Assert
+        var success = Assert.IsType<TechnicalStepResult<string>.Success>(result);
+        Assert.Equal(output, JsonSerializer.Deserialize<Out>(success.Value));
+    }
+{{- end }}
+}

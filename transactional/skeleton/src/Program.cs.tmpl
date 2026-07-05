@@ -2,10 +2,16 @@ using Dapr.Client;
 using Dapr.Messaging.PublishSubscribe.Extensions;
 using {{ .name }}.Receive;
 using {{ .name }}.Send;
+{{- if not .empty }}
+using Intropy.BusinessIncidentService.Client;
+{{- end }}
 using Intropy.Framework.Adapters.File;
 using Intropy.Framework.Blocks.TransactionalIntegration.Receive;
 using Intropy.Framework.Core.Configuration;
 using Intropy.Framework.Hosting.TransactionalIntegration.Job;
+{{- if not .empty }}
+using Intropy.IdempotencyService.Client;
+{{- end }}
 using Intropy.Telemetry.ConsoleApp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,18 +24,26 @@ services.AddLogging(builder => builder.AddConsole());
 
 services.AddOpenTelemetry(conf =>
 {
-    conf.ServiceNamespace = Constants.CustomerName;
+    conf.ServiceNamespace = Constants.Organization;
     conf.ServiceName = Constants.ComponentName;
     conf.Environment = environment;
 });
 
 services.AddSingleton(_ => new DaprClientBuilder().Build());
 services.AddDaprPubSubClient();
+{{- if not .empty }}
+
+// Registered after the DaprClient above on purpose: AddIdempotencyServiceClient
+// contributes its own DaprClient registration (camelCase JSON + string enums),
+// and the last registration wins for GetRequiredService<DaprClient>().
+services.AddIdempotencyServiceClient();      // Dapr app id / HTTPEndpoint name: idempotency-service
+services.AddBusinessIncidentServiceClient(); // Dapr app id / HTTPEndpoint name: business-incident-service
+{{- end }}
 
 services.AddIntropyFramework(x =>
 {
     x.ComponentName = Constants.ComponentName;
-    x.ServiceNamespace = Constants.CustomerName;
+    x.ServiceNamespace = Constants.Organization;
 });
 
 services.AddTransactionalIntegration(options =>

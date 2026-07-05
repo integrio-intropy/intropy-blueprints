@@ -1,3 +1,5 @@
+using System.Globalization;
+using {{ .name }}.Configuration;
 using {{ .name }}.Model;
 using Intropy.Framework.Blocks.Shared;
 using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
@@ -17,7 +19,7 @@ public class Transformer : TransformStep<In, Out, Context>
         var output = new Out(
             OrderId: input.OrderId,
             CustomerId: input.CustomerId,
-            ProcessedAt: DateTimeOffset.UtcNow,
+            ProcessedAt: DateTimeOffset.Parse(context.Metadata[Constants.ContextKeyProcessedAt], CultureInfo.InvariantCulture),
             TotalAmount: total,
             Status: "Processed");
 

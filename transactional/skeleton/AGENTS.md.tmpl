@@ -15,6 +15,12 @@ pipeline that writes the transformed result to a second local file binding.
 - Topic: `orders`
 - Source binding: `inbound-storage` (Dapr local storage, rootPath `./local/storage/inbound`)
 - Destination binding: `outbound-storage` (Dapr local storage, rootPath `./local/storage/outbound`)
+{{- if not .empty }}
+- Idempotency Service: reached via Dapr service invocation, app id `idempotency-service`
+  (locally an `HTTPEndpoint` component pointing at `http://127.0.0.1:8080`)
+- Business Incident Service: reached via Dapr service invocation, app id
+  `business-incident-service` (locally an `HTTPEndpoint` at `http://127.0.0.1:8081`)
+{{- end }}
 
 ## Important files
 
@@ -23,32 +29,54 @@ pipeline that writes the transformed result to a second local file binding.
 - `src/Configuration/Constants.cs` - component names, keyed-adapter keys, context metadata keys.
 - `src/Receive/` - source listing and the receive pipeline steps (`Receiver`, `Enqueuer`, `Completer`).
 - `src/Send/` - the VETER send pipeline steps.
-- `local/dapr-components/` - local Dapr component YAMLs (pub/sub, storage bindings).
+- `test/` - xUnit tests for the send pipeline steps (`task test`).
+- `local/dapr-components/` - the job's local Dapr components (pub/sub, storage bindings,
+  HTTPEndpoints for the platform services).
+- `local/platform-services/` - Docker Compose + Dapr components for the local
+  Idempotency Service and Business Incident Service (included by `docker-compose.yml`).
 - `local/sample-data/sample-order.json` - sample input seeded into the inbound folder.
 
 ## Build and run
 
 `task run` is the canonical run path. It seeds the inbound folder with the
-sample order, starts the local grafana/otel-lgtm observability stack, and runs
-the job once under Dapr with OTLP export configured; the job exits when done.
+sample order, starts the local stack (grafana/otel-lgtm plus the Idempotency
+Service and Business Incident Service with their backing stores), and runs the
+job once under Dapr with OTLP export configured; the job exits when done.
 
 ```bash
 task run
 ```
 
-Other tasks: `task build` (dotnet build), `task clean` (stop the Dapr app and
-remove `./local/storage`), `task lgtm:down` (stop the observability stack).
-See `Taskfile.yml` for ports and flags.
+Other tasks: `task build` (dotnet build), `task test` (dotnet test), `task clean`
+(stop the Dapr app and remove `./local/storage`), `task services:down` (stop the
+local stack). See `Taskfile.yml` for ports and flags.
 
 ## Development notes
 
 - Source and destination `IFileAdapter` instances are registered as keyed singletons
   (`Constants.SourceFileAdapterKey`, `Constants.DestinationFileAdapterKey`). Inject them
   via `[FromKeyedServices(...)]` or resolve via `GetRequiredKeyedService<IFileAdapter>(...)`.
-- The send pipeline does not use idempotency or business-incident services in this
-  sample - it is deliberately minimal. Add `.WithIdempotency(...)` and
-  `.WithBusinessIncidents(...)` to the builder in `Send/ServiceCollectionExtensions.cs`
-  once those services are reachable.
+{{- if .empty }}
+- The pipelines are scaffolded without idempotency or business-incident wiring.
+  When you implement the step bodies, also add `.WithIdempotency(client, idExtractor,
+  dateExtractor)` and `.WithBusinessIncidents(client, messageIdExtractor, subjectExtractor)`
+  to the send pipeline builder in `Send/ServiceCollectionExtensions.cs` (and
+  `.WithBusinessIncidents(...)` on the receive pipeline), register the clients in
+  `Program.cs` with `services.AddIdempotencyServiceClient()` and
+  `services.AddBusinessIncidentServiceClient()`, and pick a stable business identifier
+  and business timestamp for the idempotency extractors.
+{{- else }}
+- The send pipeline checks idempotency before transforming: the id is the order's
+  `OrderId` and the timestamp its `OrderDate`, so a redelivered unchanged order
+  cancels as a traceable no-op instead of writing twice. Keep the id/date extractors
+  pointing at *business* fields — a per-delivery value (fresh GUID, wall-clock time)
+  makes the check pass everything.
+- Business failures (validation, receive errors) are routed to the Business Incident
+  Service; the send pipeline keys incidents on the order id, the receive pipeline on
+  the source file name.
+- Impure values originate in `Deserializer` and travel via `Context.Metadata`
+  (`order_id`, `processed_at`); later steps stay pure and unit-testable.
+{{- end }}
 
 ## Framework guidance
 

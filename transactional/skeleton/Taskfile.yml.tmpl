@@ -35,14 +35,21 @@ tasks:
       - cp local/sample-data/sample-order.json {{ "{{" }}.INBOUND_DIR}}/
       - echo "Seeded {{ "{{" }}.INBOUND_DIR}} with sample-order.json"
 
+  # ── Tests ─────────────────────────────────────────────────────────
+  test:
+    desc: Run the unit tests
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - dotnet test ./test
+
   # ── Component runner ──────────────────────────────────────────────
   run:
     desc: Run the integration job once via Dapr (in-memory pub/sub) and exit
-    deps: [seed, lgtm:up]
+    deps: [seed, services:up]
     dir: "{{ "{{" }}.TASKFILE_DIR}}"
     env:
       DOTNET_ENVIRONMENT: Development
-      # Export OTLP to the local grafana/otel-lgtm stack (see `task lgtm:up`).
+      # Export OTLP to the local grafana/otel-lgtm stack (see `task services:up`).
       # If nothing is listening the exporter just logs a warning — it won't crash the job.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     cmds:
@@ -59,16 +66,17 @@ tasks:
         --
         dotnet run --project ./src
 
-  # ── Local observability (OpenTelemetry) ──────────────────────────
-  lgtm:up:
-    desc: Start the local grafana/otel-lgtm stack (OTLP collector + Grafana on :3000)
+  # ── Local services (observability + platform services) ───────────
+  services:up:
+    desc: Start the local stack — grafana/otel-lgtm, Idempotency Service, Business Incident Service
     dir: "{{ "{{" }}.TASKFILE_DIR}}"
     cmds:
-      - docker compose up -d lgtm
+      - docker compose up -d --wait
       - echo "Grafana UI → http://localhost:3000  (OTLP gRPC on :4317)"
+      - echo "Idempotency Service → http://localhost:8080, Business Incident Service → http://localhost:8081"
 
-  lgtm:down:
-    desc: Stop and remove the local grafana/otel-lgtm stack
+  services:down:
+    desc: Stop and remove the local stack
     dir: "{{ "{{" }}.TASKFILE_DIR}}"
     cmds:
       - docker compose down

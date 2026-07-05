@@ -19,6 +19,8 @@ public class Deserializer : DeserializeStep<In, Context>
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
         context.Metadata[Constants.ContextKeyOrderId] = order.OrderId;
+        // Impure values originate here and travel via context; later steps stay pure.
+        context.Metadata[Constants.ContextKeyProcessedAt] = DateTimeOffset.UtcNow.ToString("O");
 
         return Task.FromResult<(BusinessStepResult<In>, Context)>(
             (new BusinessStepResult<In>.Success(order), context));

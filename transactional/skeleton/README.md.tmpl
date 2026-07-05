@@ -11,13 +11,20 @@ task run
 ```
 
 This seeds `./local/storage/inbound` with the bundled sample order, starts the
-local grafana/otel-lgtm observability stack, and runs the job once under Dapr.
-The runner picks up the file, publishes it via in-memory pub/sub to topic `orders`,
-runs the send pipeline, writes the transformed JSON to
+local stack (grafana/otel-lgtm observability plus the Intropy Idempotency Service
+and Business Incident Service — see `local/platform-services/`), and runs the job
+once under Dapr. The runner picks up the file, publishes it via in-memory pub/sub
+to topic `orders`, runs the send pipeline, writes the transformed JSON to
 `./local/storage/outbound/<orderId>.json`, and deletes the source file.
 
-Other tasks: `task build`, `task clean` (remove `./local/storage`), and
-`task lgtm:down` (stop the observability stack). See `Taskfile.yml`.
+{{- if not .empty }}
+Run `task run` again with the same order and the send pipeline cancels at the
+idempotency check instead of writing twice — the second run's trace shows the
+check step cancelled and no downstream steps.
+{{- end }}
+
+Other tasks: `task build`, `task test`, `task clean` (remove `./local/storage`),
+and `task services:down` (stop the local stack). See `Taskfile.yml`.
 
 ## Pipeline
 
@@ -28,10 +35,31 @@ Other tasks: `task build`, `task clean` (remove `./local/storage`), and
 3. `Completer` deletes the source file.
 
 **Send** (per pub/sub delivery):
+{{- if .empty }}
 
 1. `Deserializer` parses the JSON into `In`.
 2. `Extractor` pass-through.
-3. `Validator` enforces required fields and basic business rules.
-4. `Transformer` maps `In` → `Out` and sums the line totals.
+3. `Validator` enforces business rules.
+4. `Transformer` maps `In` → `Out`.
 5. `Serializer` serializes back to JSON.
-6. `Sender` writes the JSON to the outbound binding using `<orderId>.json`.
+6. `Sender` writes the JSON to the outbound binding.
+
+Every step body throws `NotImplementedException` — this project was scaffolded
+with empty bodies for a migration agent to fill in. When implementing, also wire
+idempotency and business incidents (see `AGENTS.md`).
+{{- else }}
+
+1. `Deserializer` parses the JSON into `In` and stamps `order_id` / `processed_at`
+   into the pipeline context.
+2. Idempotency check — asks the Idempotency Service whether this `OrderId` /
+   `OrderDate` combination was already processed; duplicates cancel the run.
+3. `Extractor` pass-through.
+4. `Validator` enforces required fields and basic business rules; failures are
+   routed to the Business Incident Service.
+5. `Transformer` maps `In` → `Out` and sums the line totals.
+6. `Serializer` serializes back to JSON.
+7. `Sender` writes the JSON to the outbound binding using `<orderId>.json`.
+
+After a successful send the idempotency record is committed, so the next delivery
+of the same order is recognised.
+{{- end }}

@@ -1,5 +1,8 @@
 using Dapr.Client;
 using {{ .name }}.Configuration;
+{{- if not .empty }}
+using Intropy.Contracts.BusinessIncidentService;
+{{- end }}
 using Intropy.Framework.Adapters.File;
 using Intropy.Framework.Blocks.Shared;
 using Intropy.Framework.Blocks.TransactionalIntegration;
@@ -19,11 +22,24 @@ public static class ServiceCollectionExtensions
             var daprClient = provider.GetRequiredService<DaprClient>();
             var tiOptions = provider.GetRequiredService<TransactionalIntegrationOptions>();
             var frameworkOptions = provider.GetRequiredService<FrameworkOptions>();
+{{- if not .empty }}
+            var incidentClient = provider.GetRequiredService<IBusinessIncidentServiceClient>();
+
+            return builder
+                .WithReceiver(new Receiver(sourceAdapter))
+                .WithEnqueuer(new Enqueuer(daprClient, tiOptions, frameworkOptions))
+                .WithCompleter(new Completer(sourceAdapter))
+                .WithBusinessIncidents(
+                    incidentClient,
+                    messageIdExtractor: ctx => ctx.Metadata.GetValueOrDefault(Constants.ContextKeyFileName, "unknown"),
+                    subjectExtractor: ctx => ctx.Metadata.GetValueOrDefault(Constants.ContextKeyFileName, "unknown"));
+{{- else }}
 
             return builder
                 .WithReceiver(new Receiver(sourceAdapter))
                 .WithEnqueuer(new Enqueuer(daprClient, tiOptions, frameworkOptions))
                 .WithCompleter(new Completer(sourceAdapter));
+{{- end }}
         });
         return services;
     }
