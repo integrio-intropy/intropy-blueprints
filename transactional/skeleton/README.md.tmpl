@@ -26,6 +26,15 @@ check step cancelled and no downstream steps.
 Other tasks: `task build`, `task test`, `task clean` (remove `./local/storage`),
 and `task services:down` (stop the local stack). See `Taskfile.yml`.
 
+## Container image
+
+```bash
+docker build -t {{ .appId }} .
+```
+
+Multi-stage build on the .NET 10 chiseled runtime. The image contains only the
+app — the Dapr sidecar and components come from the deployment environment.
+
 ## Pipeline
 
 **Receive** (per source file):

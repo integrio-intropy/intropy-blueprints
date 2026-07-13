@@ -25,6 +25,9 @@ pipeline that writes the transformed result to a second local file binding.
 ## Important files
 
 - `Taskfile.yml` - local-dev tasks; `task run` is the canonical way to run the job.
+- `Dockerfile` - multi-stage image build on the .NET chiseled runtime
+  (`docker build -t {{ .appId }} .`); the image contains only the app — the
+  Dapr sidecar and components come from the deployment environment.
 - `src/Program.cs` - DI wiring and entrypoint that runs the `TransactionalIntegrationRunner`.
 - `src/Configuration/Constants.cs` - component names, keyed-adapter keys, context metadata keys.
 - `src/Receive/` - source listing and the receive pipeline steps (`Receiver`, `Enqueuer`, `Completer`).

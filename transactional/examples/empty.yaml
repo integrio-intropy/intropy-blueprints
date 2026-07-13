@@ -2,5 +2,5 @@
 # idempotency/business-incident wiring) — the migration-agent starting point.
 #   intropy int create transactional -o /tmp/tx-empty -f transactional/examples/empty.yaml --version main --no-input
 name: OrderSync
-organization: Acme
+organization: Fluxia
 empty: true
