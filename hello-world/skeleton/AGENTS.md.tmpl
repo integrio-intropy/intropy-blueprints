@@ -20,6 +20,10 @@ This project is an ASP.NET Minimal API integration component using Dapr pub/sub 
 - `src/Ingest/Endpoints.cs` - HTTP endpoints and the Dapr subscription.
 - `src/Process/` - the order send pipeline, its builder, and step classes.
 - `local/dapr-components/` - local Dapr component YAMLs (pub/sub, storage binding).
+- `Dockerfile` - multi-stage image build on the .NET chiseled ASP.NET runtime,
+  listening on port 5001 (`docker build -t {{ .appId }} .`); the image contains
+  only the app — the Dapr sidecar and components come from the deployment
+  environment.
 - `src/{{ .name }}.http` - sample HTTP requests.
 
 ## Build and run
