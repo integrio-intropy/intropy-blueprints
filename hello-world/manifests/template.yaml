@@ -1,0 +1,51 @@
+apiVersion: intropy.dev/v1
+kind: Template
+metadata:
+  name: dapr-minimal-api-manifests
+  title: Dapr Minimal API — Deployment Manifests
+  description: >-
+    Kustomize base + dev/prod overlays deploying the sample API with a Dapr
+    sidecar and an app-scoped pub/sub component.
+  tags:
+    - manifests
+    - kubernetes
+    - kustomize
+    - dapr
+  labels:
+    intropy.io/template-level: example
+
+spec:
+  parameters:
+    type: object
+    required:
+      - appId
+    properties:
+      # Auto-filled from .intropy/scaffold.json (derived from `name` at
+      # scaffold time), so `intropy manifests create` never prompts for it
+      # in a normally scaffolded project.
+      appId:
+        type: string
+        title: Dapr app id
+        description: >-
+          Kebab-case Dapr app id, also used for resource names and labels.
+          Auto-filled from the scaffold record.
+        pattern: "^[a-z][a-z0-9-]*$"
+      namespace:
+        type: string
+        title: Kubernetes namespace
+        description: Namespace the overlays deploy into.
+        default: integrations
+        pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+      imageRepository:
+        type: string
+        title: Image repository
+        description: >-
+          Container image repository, without a tag — overlays pin tags via
+          the kustomize images transformer. Leave empty to use
+          harbor.intropy.io/integrations/<appId>.
+        default: ""
+  values:
+    # Untagged image reference; each overlay pins the tag with `images:`.
+    # spec.values render before the scaffold map is injected, so this must
+    # use the declared appId parameter, not .scaffold.appId.
+    image: '{{ .imageRepository | default (printf "harbor.intropy.io/integrations/%s" .appId) }}'

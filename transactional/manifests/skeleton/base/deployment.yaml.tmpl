@@ -1,0 +1,42 @@
+# Deployment for {{ .scaffold.name }} ({{ .appId }}).
+#
+# The job is a one-shot console app: it drains the inbound binding, runs the
+# send pipeline, and exits. Under a Deployment (restartPolicy Always) the app
+# container is restarted with backoff, which acts as a crude poll loop. For
+# scheduled runs, convert this to a CronJob — the Dapr annotations move to
+# the job template's pod spec unchanged.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .appId }}
+  labels:
+    app: {{ .appId }}
+spec:
+  replicas: 1  # single poller; scale out only with competing-consumer semantics
+  selector:
+    matchLabels:
+      app: {{ .appId }}
+  template:
+    metadata:
+      labels:
+        app: {{ .appId }}
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "{{ .appId }}"
+        # No dapr.io/app-port: the job exposes no HTTP endpoints — it uses
+        # the Dapr client outbound and streaming pub/sub only.
+    spec:
+      containers:
+        - name: app
+          image: {{ .image }}  # tag pinned per overlay via the images transformer
+          env:
+            - name: DOTNET_ENVIRONMENT
+              value: Production
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .otlpEndpoint }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

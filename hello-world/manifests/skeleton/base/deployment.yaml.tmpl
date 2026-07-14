@@ -1,0 +1,36 @@
+# Deployment for {{ .scaffold.name }} ({{ .appId }}).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .appId }}
+  labels:
+    app: {{ .appId }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .appId }}
+  template:
+    metadata:
+      labels:
+        app: {{ .appId }}
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "{{ .appId }}"
+        # Same app port as the container (Dockerfile: ASPNETCORE_URLS=http://+:5001).
+        dapr.io/app-port: "5001"
+    spec:
+      containers:
+        - name: app
+          image: {{ .image }}  # tag pinned per overlay via the images transformer
+          ports:
+            - containerPort: 5001
+          env:
+            - name: DOTNET_ENVIRONMENT
+              value: Production
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

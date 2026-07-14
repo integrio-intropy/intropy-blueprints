@@ -1,0 +1,4 @@
+# Render fixture:
+#   intropy int create hello-world -o /tmp/hw -f hello-world/examples/minimal.yaml \
+#     --version main --no-input
+name: HelloOrders

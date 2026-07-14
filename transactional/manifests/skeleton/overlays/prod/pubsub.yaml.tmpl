@@ -1,0 +1,21 @@
+# RabbitMQ pub/sub, matching the broker the platform services use. Expects a
+# Kubernetes secret named `rabbitmq` with key `connectionString` in the
+# target namespace (Dapr's kubernetes secret store is the default in-cluster).
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.rabbitmq
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: rabbitmq
+        key: connectionString
+    - name: durable
+      value: "true"
+    - name: deliveryMode
+      value: "2"
+scopes:
+  - {{ .appId }}

@@ -1,0 +1,9 @@
+# Values for `intropy manifests create` — used with -f for local verification
+# from inside a scaffolded project:
+#
+#   intropy manifests create -f <blueprints>/transactional/examples/manifests.yaml \
+#     --version main --no-input
+#
+# Everything not set here is seeded from .intropy/scaffold.json or defaulted.
+imageRepository: harbor.intropy.io/integrations/order-sync
+namespace: integrations

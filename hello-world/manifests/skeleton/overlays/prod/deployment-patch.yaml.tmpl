@@ -1,0 +1,6 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .appId }}
+spec:
+  replicas: 2  # stateless web API — safe to scale

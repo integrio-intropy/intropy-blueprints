@@ -19,10 +19,14 @@ one manifest format, one source of truth per blueprint.
   template.yaml          # required: the intropy.dev/v1 manifest
   skeleton/              # required: rendered into the user's --output
     <files…>             # `.tmpl` files are templated; everything else is copied
+  manifests/             # optional: deployment-manifest template
+    template.yaml        #   same intropy.dev/v1 Template schema as the root manifest
+    skeleton/            #   rendered by `intropy manifests create` into <project>/deploy/
   README.md              # optional: author-facing — what this blueprint produces
   examples/              # optional: test fixtures for local renders
     minimal.yaml
     full.yaml
+    manifests.yaml       #   values for `intropy manifests create -f …`
 ```
 
 Rules:
@@ -114,6 +118,74 @@ Generated from the `{{ .name }}` blueprint.
 Module: `{{ .module }}`
 ```
 
+## Deployment manifests (`<blueprint>/manifests/`)
+
+Optional second template rendered by `intropy manifests create` from inside a
+scaffolded project. The CLI walks up to `.intropy/scaffold.json`, re-fetches
+the blueprint at the pinned release tag, and renders
+`<blueprint>/manifests/skeleton/` into `<project>/deploy/`.
+
+Contract:
+
+- **Both files are required together.** `manifests/template.yaml` AND
+  `manifests/skeleton/` must exist; the CLI errors on a partial tree. A
+  blueprint without `manifests/` is still valid — `manifests create` then
+  fails with an actionable "does not include deployment manifest templates"
+  error.
+- **Same manifest schema, same renderer.** `manifests/template.yaml` is a
+  normal `intropy.dev/v1` `kind: Template`; the skeleton follows the exact
+  conventions above (`.tmpl` suffix, path templating, `missingkey=error`).
+
+Value resolution for `manifests create` layers, in order: parameter defaults
+→ **scaffold seed** → `--values` files → `--set` → prompts for missing
+required parameters → JSON Schema validation → `spec.values`.
+
+- **The scaffold seed:** any scaffold value (including derived `spec.values`
+  from scaffold time, like `appId`) whose key matches a *declared* manifest
+  parameter auto-fills it — no re-prompt. Convention: declare `appId` as a
+  required manifest parameter so it seeds from the scaffold record and
+  `manifests create` runs zero-prompt on a normally scaffolded project.
+- **The reserved `scaffold` key:** the full scaffold value map is injected
+  under `.scaffold` for **skeleton files only** (e.g.
+  `{{ .scaffold.name }}`). Declaring a parameter or `spec.values` entry named
+  `scaffold` is an error. `spec.values` expressions **cannot** see
+  `.scaffold.*` — the map is injected after value resolution. Only reference
+  `.scaffold.<key>` for keys every scaffold record has (`name`); hand-written
+  minimal records may lack the rest, and `missingkey=error` fails the render.
+- **Templated defaults:** JSON Schema defaults are static strings. For a
+  default derived from another parameter, give the parameter `default: ""`
+  and compute the real value in `spec.values`, e.g.
+  `image: '{{ .imageRepository | default (printf "harbor.intropy.io/integrations/%s" .appId) }}'`.
+
+Layout convention (see `transactional/manifests/` for the full version,
+`hello-world/manifests/` for the minimal one):
+
+- Kustomize `base/` + `overlays/dev` + `overlays/prod`.
+- The Deployment renders the image **untagged**; each overlay pins the tag
+  with the kustomize `images:` transformer (`newTag: latest` in dev, a pinned
+  version in prod, bumped via `kustomize edit set image`).
+- `namespace` is set in the overlay kustomizations, not in base.
+- The `pubsub` component lives per-overlay (dev: `pubsub.in-memory`, prod:
+  `pubsub.rabbitmq` with a `secretKeyRef`); base holds the Deployment plus
+  app-scoped components and HTTPEndpoints. Scope components to the app id
+  (`scopes: [{{ .appId }}]`).
+- Storage-binding components are **placeholders** (`bindings.localstorage`
+  on the sidecar's ephemeral filesystem) — each real integration replaces
+  them with its actual transport, keeping the component names the app
+  resolves.
+
+Verify from a pushed branch (there is no local-path rendering — the CLI
+always fetches the GitHub tarball):
+
+```bash
+intropy int create <name> -o /tmp/<name>-out -f <name>/examples/minimal.yaml \
+  --version <branch> --no-input --skip-install-skills
+cd /tmp/<name>-out
+intropy manifests create --version <branch> --no-input   # must be zero-prompt
+kustomize build deploy/overlays/dev
+kustomize build deploy/overlays/prod
+```
+
 ## The `AGENTS.md` convention
 
 Every skeleton ships an `AGENTS.md.tmpl` at its root. `AGENTS.md` (per the
@@ -176,6 +248,9 @@ change one, change the others in the same commit.
 
 7. Inspect `/tmp/<name>-out/` and confirm the rendered output matches what
    you expected.
+8. Optional: if the blueprint should support `intropy manifests create`, add
+   `manifests/template.yaml` + `manifests/skeleton/` following the
+   deployment-manifests section above, plus an `examples/manifests.yaml`.
 
 ## Releases and versioning
 

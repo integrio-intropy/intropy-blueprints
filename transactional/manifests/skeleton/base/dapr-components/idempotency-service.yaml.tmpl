@@ -1,0 +1,13 @@
+# Reaches the cluster-managed Idempotency Service via Dapr service
+# invocation. The endpoint name matches the app id the client resolves
+# (see AddIdempotencyServiceClient in Program.cs), so no client
+# configuration is needed. Assumes a ClusterIP Service named
+# idempotency-service on port 80 in the platform namespace. If the platform
+# services run Dapr-enabled in this cluster, delete this file — app-id
+# routing resolves them directly.
+apiVersion: dapr.io/v1alpha1
+kind: HTTPEndpoint
+metadata:
+  name: idempotency-service
+spec:
+  baseUrl: http://idempotency-service.{{ .platformNamespace }}.svc.cluster.local

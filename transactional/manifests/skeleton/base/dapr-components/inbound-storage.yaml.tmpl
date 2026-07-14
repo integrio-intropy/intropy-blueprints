@@ -1,0 +1,17 @@
+# PLACEHOLDER — replace with the real inbound transport for this integration
+# (bindings.sftp, bindings.azure.blobstorage, ...). bindings.localstorage
+# reads the Dapr sidecar's own filesystem, which is ephemeral in a pod:
+# files vanish on restart. Keep the component name — the app resolves it via
+# Constants.InboundBindingName.
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: inbound-storage
+spec:
+  type: bindings.localstorage
+  version: v1
+  metadata:
+    - name: rootPath
+      value: /tmp/intropy/inbound
+scopes:
+  - {{ .appId }}

@@ -1,0 +1,11 @@
+# In-memory pub/sub for dev: the app both publishes and subscribes, so no
+# broker is needed. Matches the local dev setup.
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+spec:
+  type: pubsub.in-memory
+  version: v1
+scopes:
+  - {{ .appId }}

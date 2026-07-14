@@ -1,0 +1,13 @@
+# Reaches the cluster-managed Business Incident Service via Dapr service
+# invocation. The endpoint name matches the app id the client resolves
+# (see AddBusinessIncidentServiceClient in Program.cs), so no client
+# configuration is needed. Assumes a ClusterIP Service
+# named business-incident-service on port 80 in the platform namespace. If
+# the platform services run Dapr-enabled in this cluster, delete this file —
+# app-id routing resolves them directly.
+apiVersion: dapr.io/v1alpha1
+kind: HTTPEndpoint
+metadata:
+  name: business-incident-service
+spec:
+  baseUrl: http://business-incident-service.{{ .platformNamespace }}.svc.cluster.local
