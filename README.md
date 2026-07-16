@@ -1,23 +1,23 @@
-# intropy-blueprints
+# intropy-templates
 
-A library of **Intropy blueprints** — scaffold-style templates rendered into
+A library of **Intropy templates** — scaffolds rendered into
 working projects by the `intropy` CLI (separate repo:
 `integrio-intropy/intropy-cli`). This repo contains content, not code: the CLI
 is the only renderer.
 
 One engine: Go `text/template` + [sprig](https://masterminds.github.io/sprig/).
-One manifest format. One skeleton tree per blueprint.
+One manifest format. One skeleton tree per template.
 
-## Blueprints
+## Templates
 
-- **`hello-world/`** — minimal example blueprint that exercises the manifest
+- **`hello-world/`** — minimal example template that exercises the manifest
   and skeleton conventions.
-- **`transactional/`** — a transactional integration component blueprint.
+- **`transactional/`** — a transactional integration component template.
 
-## Blueprint layout
+## Template layout
 
 ```
-<blueprint>/
+<template>/
   template.yaml          required: the intropy.dev/v1 manifest
   skeleton/              required: rendered into the user's --output
     <files…>             `.tmpl` files are templated; everything else is copied
@@ -26,7 +26,7 @@ One manifest format. One skeleton tree per blueprint.
 ```
 
 Only `template.yaml` and `skeleton/` are seen by the renderer. Anything else at
-the blueprint root is for the author, not the scaffolded project.
+the template root is for the author, not the scaffolded project.
 
 ## Rendering locally
 

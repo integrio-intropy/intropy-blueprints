@@ -4,22 +4,22 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## What this repo is
 
-A library of **Intropy blueprints**. Each blueprint is a scaffold-style template
+A library of **Intropy templates**. Each template is a scaffold
 rendered into a working project by the `intropy` CLI (separate repo:
 `integrio-intropy/intropy-cli`). The CLI is the only renderer; this repo
 contains content, not code.
 
 The model is intentionally narrow: one engine (Go `text/template` + sprig),
-one manifest format, one source of truth per blueprint.
+one manifest format, one source of truth per template.
 
 ## Repository layout
 
 ```
-<blueprint>/
+<template>/
   template.yaml          # required: the intropy.dev/v1 manifest
   skeleton/              # required: rendered into the user's --output
     <files…>             # `.tmpl` files are templated; everything else is copied
-  README.md              # optional: author-facing — what this blueprint produces
+  README.md              # optional: author-facing — what this template produces
   examples/              # optional: test fixtures for local renders
     minimal.yaml
     full.yaml
@@ -27,18 +27,18 @@ one manifest format, one source of truth per blueprint.
 
 Rules:
 
-- The CLI selects a blueprint via positional argument:
+- The CLI selects a template via positional argument:
   `intropy int create hello-world -o ./out`.
-- Only `<blueprint>/template.yaml` is parsed; only `<blueprint>/skeleton/` is
+- Only `<template>/template.yaml` is parsed; only `<template>/skeleton/` is
   walked by the renderer.
-- Anything else at the blueprint root (README, examples, CHANGELOG, ADRs) is
-  invisible to the renderer — it's for the blueprint author, not the
+- Anything else at the template root (README, examples, CHANGELOG, ADRs) is
+  invisible to the renderer — it's for the template author, not the
   scaffolded project.
-- There is **no shared content between blueprints**. No repo-level
-  `skeletons/` dir, no cross-blueprint includes. If two blueprints need the
+- There is **no shared content between templates**. No repo-level
+  `skeletons/` dir, no cross-template includes. If two templates need the
   same file, duplicate it.
 
-## Manifest schema (`<blueprint>/template.yaml`)
+## Manifest schema (`<template>/template.yaml`)
 
 ```yaml
 apiVersion: intropy.dev/v1
@@ -72,7 +72,7 @@ Notes:
 - **`spec.parameters` is plain JSON Schema.** Types: `string`, `boolean`,
   `integer`, `number`. Supported attributes: `title`, `description`, `pattern`,
   `enum`, `default`. The same schema validates CLI inputs and drives the
-  Backstage form when a Template entity references this blueprint.
+  Backstage form when a Template entity references this template.
 - **Parameter declaration order matters** for human display. Keep the YAML
   order intentional.
 - **`spec.values` derives string values from parameters.** Each entry is a Go
@@ -84,7 +84,7 @@ Notes:
   intentionally narrow: a manifest declares parameters and the skeleton tree
   describes what gets written.
 
-## Skeleton conventions (`<blueprint>/skeleton/`)
+## Skeleton conventions (`<template>/skeleton/`)
 
 - **File contents are templated only if the filename ends in `.tmpl`.** The
   `.tmpl` suffix is stripped on output (`README.md.tmpl` → `README.md`).
@@ -109,7 +109,7 @@ Example skeleton file `skeleton/README.md.tmpl`:
 ```markdown
 # {{ .name }}
 
-Generated from the `{{ .name }}` blueprint.
+Generated from the `{{ .name }}` template.
 
 Module: `{{ .module }}`
 ```
@@ -153,13 +153,13 @@ The facts in `AGENTS.md` must match the skeleton (component YAML `metadata.name`
 and rootPaths, `Constants.cs` values, Taskfile vars, `.http` ports). When you
 change one, change the others in the same commit.
 
-## Adding a new blueprint
+## Adding a new template
 
 1. Create the directory: `mkdir -p <name>/skeleton <name>/examples`.
 2. Write `<name>/template.yaml` (manifest).
 3. Write skeleton files under `<name>/skeleton/`. Suffix anything you want
    templated with `.tmpl`.
-4. Write `<name>/README.md` describing what the blueprint produces and what
+4. Write `<name>/README.md` describing what the template produces and what
    parameters it takes (this is for humans browsing the repo, not for the
    scaffolded project).
 5. Write at least one `<name>/examples/minimal.yaml` containing values that
@@ -179,26 +179,26 @@ change one, change the others in the same commit.
 
 ## Releases and versioning
 
-The CLI fetches blueprints by GitHub release tag:
+The CLI fetches templates by GitHub release tag:
 
 - `intropy int create <name> -o ./out` → uses the latest GitHub release.
 - `intropy int create <name> -o ./out --version v0.2.1` → uses that tag.
 - `intropy int create <name> -o ./out --version main` → uses the default
   branch (works on any ref the GitHub tarball endpoint accepts).
 
-To ship a new blueprint version, cut a GitHub release. There is no
-intermediate index. The blueprint version is the release tag, not a commit
-SHA — all blueprints in the repo share the same release cadence.
+To ship a new template version, cut a GitHub release. There is no
+intermediate index. The template version is the release tag, not a commit
+SHA — all templates in the repo share the same release cadence.
 
 ## What this repo is NOT
 
 - **Not a Backstage scaffolder template repo.** Don't add
   `scaffolder.backstage.io/v1beta3` files. Don't add `spec.steps`,
   `intropy:workspace:template`, `publish:gitlab:merge-request`, or any
-  scaffolder action references. Backstage talks to blueprints through a
+  scaffolder action references. Backstage talks to templates through a
   custom action that shells out to the `intropy` CLI; it does not render
   templates itself.
 - **Not a multi-engine repo.** The renderer is Go `text/template` + sprig,
-  full stop. One engine, one skeleton tree per blueprint.
+  full stop. One engine, one skeleton tree per template.
 - **Not a place for runtime code.** The CLI lives in
   `integrio-intropy/intropy-cli`. This repo ships content only.
