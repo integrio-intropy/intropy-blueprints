@@ -14,6 +14,20 @@ One manifest format. One skeleton tree per template.
   and skeleton conventions.
 - **`transactional/`** — a transactional integration component template.
 
+Block templates — scaffold one component of an integration system and record
+its edge intent in `.intropy/scaffold.json` so `intropy system create` can wire
+them into a SystemHost (see the "Block templates" section of `CLAUDE.md`):
+
+- **`block-extractor/`** — reads from an external system and publishes a topic.
+- **`block-loader/`** — subscribes to a topic and loads into an external system.
+- **`block-aggregator/`** — subscribes to topics and publishes an aggregated topic.
+- **`system-host/`** — the Aspire SystemHost that declares the system's
+  components and edges; scaffolded by `intropy system create`.
+
+The transactional-integration block kind is carried by the `transactional`
+template above (via its `intropy.dev/block-kind` label) rather than a separate
+thin template.
+
 ## Template layout
 
 ```

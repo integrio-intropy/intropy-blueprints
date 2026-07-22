@@ -48,8 +48,10 @@ metadata:
   title: <Title Case>
   description: <one sentence>
   tags: [example, go, http]
-  labels:                      # free-form; no key is load-bearing today
+  labels:                      # free-form, except the intropy.dev/* keys below
     intropy.io/template-level: example
+    # intropy.dev/data-flow: in|out|both|internal — copied into scaffold.json
+    # intropy.dev/block-kind: <kind> — marks a block template (see "Block templates")
 spec:
   parameters:                  # raw JSON Schema; type must be "object"
     type: object
@@ -113,6 +115,46 @@ Generated from the `{{ .name }}` template.
 
 Module: `{{ .module }}`
 ```
+
+## Block templates
+
+A **block template** scaffolds one component of an Intropy integration system
+and declares which topology block kind it is via the label
+`intropy.dev/block-kind: extractor | loader | aggregator |
+transactional-integration`. When that label is present, `intropy int create`
+hoists the template's **well-known edge parameters** into a structured
+`topology` section of the scaffolded project's `.intropy/scaffold.json`.
+`intropy system create` later joins those sections across sibling components
+into a wired SystemHost (same topic name ⇒ shared topic, provided + consumed
+API name ⇒ shared API, same connector name ⇒ shared connector).
+
+The well-known parameter names per kind (validated by the CLI at create time;
+DNS-1123 unless noted):
+
+| Kind | Required | Optional |
+|------|----------|----------|
+| `extractor` | `sourceSystem`, `sourceTransport` (sftp\|http\|blob), `publishesTopic` | `connectorName` (defaults to `sourceSystem`), `publishesContract` (PascalCase; defaults to PascalCase of topic) |
+| `loader` | `subscribesTopic`, `targetSystem`, `targetTransport` | `connectorName` (defaults to `targetSystem`) |
+| `aggregator` | `subscribesTopics` (comma-separated), `publishesTopic` | `publishesPort` (defaults to `out`), `publishesContract` |
+| `transactional-integration` | `providesApi`, `targetSystem`, `targetTransport` | `providesContract` (defaults to PascalCase of API), `connectorName` |
+
+All kinds may also declare `consumesApis` (comma-separated).
+
+Further block template conventions:
+
+- **`name` is the DNS-1123 component name**, not a PascalCase project name.
+  It becomes the folder name, the csproj name (`skeleton/{{ .name }}.csproj.tmpl`),
+  and the Dapr app-id — the SystemHost resolves component projects by the
+  convention `../<name>/<name>.csproj`, so all three must match. Derive the
+  PascalCase form as a `projectName` value for `RootNamespace`.
+- The skeleton is **flat** (csproj at the skeleton root, no `src/`) so the
+  rendered project satisfies that convention.
+- Don't declare a Contracts `ProjectReference` in the csproj —
+  `intropy system create` inserts it when it generates the system's shared
+  Contracts project.
+- The pub/sub component name is a **system-level decision**: workers read it
+  from the runtime config the SystemHost injects (`INTROPY__CONFIG`), never
+  hard-code it in the skeleton.
 
 ## The `AGENTS.md` convention
 

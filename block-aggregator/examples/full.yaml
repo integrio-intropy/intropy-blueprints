@@ -1,0 +1,8 @@
+# Render fixture: every parameter set explicitly.
+#   intropy int create block-aggregator -o /tmp/order-aggregator -f block-aggregator/examples/full.yaml --version main --no-input
+name: order-aggregator
+subscribesTopics: order-raw,stock-raw
+publishesPort: fulfillment
+publishesTopic: order-fulfillment
+publishesContract: FulfillmentOrder
+consumesApis: freight-booking

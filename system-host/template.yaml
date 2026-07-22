@@ -1,0 +1,28 @@
+apiVersion: intropy.dev/v1
+kind: Template
+metadata:
+  name: system-host
+  title: System Host
+  description: The Aspire host project of an Intropy integration system. Declares the system's components and the edges between them, validates the topology, and runs or generates the system from the same discovered model. Scaffolded by `intropy system create`, which also generates the topology and contracts files from the sibling components' scaffold records.
+  tags:
+    - dotnet
+    - aspire
+    - system
+  labels:
+    intropy.dev/template-role: system-host
+
+spec:
+  parameters:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        title: System name
+        description: DNS-1123 name of the integration system (e.g. order-fulfillment). Becomes the SystemName and the default pub/sub name (<name>-pubsub).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+  values:
+    projectName: '{{ .name | replace "-" " " | title | replace " " "" }}'
+    systemClass: '{{ .name | replace "-" " " | title | replace " " "" }}System'
+    pubsub: '{{ .name }}-pubsub'

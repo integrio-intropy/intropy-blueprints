@@ -1,0 +1,15 @@
+# {{ .name }}
+
+An Intropy **extractor block**: reads from the `{{ .sourceSystem }}` external
+system ({{ .sourceTransport }}) and publishes onto the `{{ .publishesTopic }}`
+topic.
+
+This component's edge intent is recorded in `.intropy/scaffold.json`. Scaffold
+the other components of your system next to this folder, then generate a wired
+SystemHost from the parent directory:
+
+```bash
+intropy system create -n <system-name>
+dotnet run --project <SystemName>.SystemHost -- check   # validate the topology
+dotnet run --project <SystemName>.SystemHost            # run the system locally
+```

@@ -1,0 +1,57 @@
+apiVersion: intropy.dev/v1
+kind: Template
+metadata:
+  name: block-loader
+  title: Loader Block
+  description: .NET worker that subscribes to a system topic and loads the events into an external system through an outbound connector. Declares its edge intent in the scaffold record so `intropy system create` can wire it into a SystemHost.
+  tags:
+    - dotnet
+    - dapr
+    - block
+    - loader
+  labels:
+    intropy.dev/data-flow: out
+    intropy.dev/block-kind: loader
+
+spec:
+  parameters:
+    type: object
+    required:
+      - name
+      - subscribesTopic
+      - targetSystem
+      - targetTransport
+    properties:
+      name:
+        type: string
+        title: Component name
+        description: DNS-1123 name of the component. Becomes the folder name, csproj name, and Dapr app-id (e.g. erp-order-loader).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      subscribesTopic:
+        type: string
+        title: Subscribed topic
+        description: DNS-1123 name of the system topic this loader subscribes to (e.g. order-fulfillment).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      targetSystem:
+        type: string
+        title: External target system
+        description: DNS-1123 name of the external system this loader writes to (e.g. erp).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      targetTransport:
+        type: string
+        title: Target transport
+        description: How the target system is reached; selects the Dapr binding type.
+        enum: [sftp, http, blob]
+      connectorName:
+        type: string
+        title: Connector name
+        description: Name of the outbound connector. Defaults to the target system name. Components naming the same connector share it in the system topology.
+        default: ""
+      consumesApis:
+        type: string
+        title: Consumed APIs
+        description: Comma-separated DNS-1123 names of system APIs this component calls, if any.
+        default: ""
+  values:
+    appId: '{{ .name }}'
+    projectName: '{{ .name | replace "-" " " | title | replace " " "" }}'

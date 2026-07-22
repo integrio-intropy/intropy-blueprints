@@ -1,0 +1,48 @@
+# Agent Instructions
+
+This project is an Intropy **extractor block**: a .NET worker that reads from an
+external system through an inbound connector and publishes raw events onto a
+system topic. It is one component of an integration system; the edges between
+components are declared in a sibling SystemHost project, not here.
+
+## Project overview
+
+- Framework: .NET 10, ASP.NET Minimal API worker
+- Block kind: extractor
+- App id / component name: `{{ .name }}`
+- Reads from: external system `{{ .sourceSystem }}` via the `{{ .connectorName | default .sourceSystem }}` connector ({{ .sourceTransport }})
+- Publishes: topic `{{ .publishesTopic }}`
+
+## Scaffold record
+
+`.intropy/scaffold.json` carries this component's edge intent in its `topology`
+section (block kind, connectors, published topics). `intropy system create`
+reads the records of all sibling components to generate a wired SystemHost —
+do not edit the `topology` section by hand; re-scaffold instead.
+
+## Runtime contract
+
+The SystemHost's run backend starts this worker with:
+
+- `INTROPY__COMPONENT` — the component name.
+- `INTROPY__CONFIG` — path to `{{ .name }}.intropy.json`, the generated runtime
+  config carrying the component's subscriptions, publishes, and connector
+  bindings (including the pub/sub component name, which is a system-level
+  decision made by the SystemHost).
+
+The folder name, csproj name, and Dapr app-id must all stay `{{ .name }}` —
+the SystemHost resolves this project by that convention (`../{{ .name }}/{{ .name }}.csproj`).
+
+## Wiring into a system
+
+From the parent directory that holds all component folders:
+
+```bash
+intropy system create -n <system-name>
+```
+
+Then validate the topology:
+
+```bash
+dotnet run --project <SystemName>.SystemHost -- check
+```

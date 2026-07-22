@@ -1,0 +1,3 @@
+# Render fixture: required parameters only.
+#   intropy int create system-host -o /tmp/AcmeOrders.SystemHost -f system-host/examples/minimal.yaml --version main --no-input
+name: acme-orders

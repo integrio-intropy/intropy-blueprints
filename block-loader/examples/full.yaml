@@ -1,0 +1,8 @@
+# Render fixture: every parameter set explicitly.
+#   intropy int create block-loader -o /tmp/erp-order-loader -f block-loader/examples/full.yaml --version main --no-input
+name: erp-order-loader
+subscribesTopic: order-fulfillment
+targetSystem: erp
+targetTransport: http
+connectorName: erp
+consumesApis: ""

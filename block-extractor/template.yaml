@@ -1,0 +1,62 @@
+apiVersion: intropy.dev/v1
+kind: Template
+metadata:
+  name: block-extractor
+  title: Extractor Block
+  description: .NET worker that reads from an external system through an inbound connector and publishes raw events onto a system topic. Declares its edge intent in the scaffold record so `intropy system create` can wire it into a SystemHost.
+  tags:
+    - dotnet
+    - dapr
+    - block
+    - extractor
+  labels:
+    intropy.dev/data-flow: in
+    intropy.dev/block-kind: extractor
+
+spec:
+  parameters:
+    type: object
+    required:
+      - name
+      - sourceSystem
+      - sourceTransport
+      - publishesTopic
+    properties:
+      name:
+        type: string
+        title: Component name
+        description: DNS-1123 name of the component. Becomes the folder name, csproj name, and Dapr app-id (e.g. order-extractor).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      sourceSystem:
+        type: string
+        title: External source system
+        description: DNS-1123 name of the external system this extractor reads from (e.g. webshop).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      sourceTransport:
+        type: string
+        title: Source transport
+        description: How the source system is reached; selects the Dapr binding type.
+        enum: [sftp, http, blob]
+      connectorName:
+        type: string
+        title: Connector name
+        description: Name of the inbound connector. Defaults to the source system name. Components naming the same connector share it in the system topology.
+        default: ""
+      publishesTopic:
+        type: string
+        title: Published topic
+        description: DNS-1123 name of the system topic this extractor publishes onto (e.g. order-raw).
+        pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+      publishesContract:
+        type: string
+        title: Published contract
+        description: PascalCase record name of the published payload. Defaults to PascalCase of the topic (order-raw -> OrderRaw).
+        default: ""
+      consumesApis:
+        type: string
+        title: Consumed APIs
+        description: Comma-separated DNS-1123 names of system APIs this component calls, if any.
+        default: ""
+  values:
+    appId: '{{ .name }}'
+    projectName: '{{ .name | replace "-" " " | title | replace " " "" }}'

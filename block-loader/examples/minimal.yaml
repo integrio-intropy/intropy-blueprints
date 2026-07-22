@@ -1,0 +1,6 @@
+# Render fixture: required parameters only.
+#   intropy int create block-loader -o /tmp/erp-order-loader -f block-loader/examples/minimal.yaml --version main --no-input
+name: erp-order-loader
+subscribesTopic: order-fulfillment
+targetSystem: erp
+targetTransport: http

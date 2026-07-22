@@ -1,0 +1,6 @@
+# Render fixture: required parameters only.
+#   intropy int create block-extractor -o /tmp/order-extractor -f block-extractor/examples/minimal.yaml --version main --no-input
+name: order-extractor
+sourceSystem: webshop
+sourceTransport: sftp
+publishesTopic: order-raw
