@@ -20,7 +20,6 @@ spec:
       - name
       - subscribesTopic
       - targetSystem
-      - targetTransport
     properties:
       name:
         type: string
@@ -35,13 +34,8 @@ spec:
       targetSystem:
         type: string
         title: External target system
-        description: DNS-1123 name of the external system this loader writes to (e.g. erp).
+        description: DNS-1123 name of the external system this loader writes to (e.g. erp). How it is reached (the transport) is chosen later at `intropy system create`.
         pattern: "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
-      targetTransport:
-        type: string
-        title: Target transport
-        description: How the target system is reached; selects the Dapr binding type.
-        enum: [sftp, http, blob]
       connectorName:
         type: string
         title: Connector name

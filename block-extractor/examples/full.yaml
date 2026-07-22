@@ -2,7 +2,6 @@
 #   intropy int create block-extractor -o /tmp/order-extractor -f block-extractor/examples/full.yaml --version main --no-input
 name: order-extractor
 sourceSystem: webshop
-sourceTransport: sftp
 connectorName: webshop
 publishesTopic: order-raw
 publishesContract: RawOrder

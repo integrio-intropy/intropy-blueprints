@@ -129,14 +129,18 @@ into a wired SystemHost (same topic name ⇒ shared topic, provided + consumed
 API name ⇒ shared API, same connector name ⇒ shared connector).
 
 The well-known parameter names per kind (validated by the CLI at create time;
-DNS-1123 unless noted):
+DNS-1123 unless noted). A block declares only its edge *shape* — which external
+system it reaches and which topics/APIs it touches. The **transport** (how the
+external system is reached; the Dapr binding type) is *not* a block parameter: it
+is resolved once, at `intropy system create`, which prompts for any connector
+whose transport is still unset:
 
 | Kind | Required | Optional |
 |------|----------|----------|
-| `extractor` | `sourceSystem`, `sourceTransport` (sftp\|http\|blob), `publishesTopic` | `connectorName` (defaults to `sourceSystem`), `publishesContract` (PascalCase; defaults to PascalCase of topic) |
-| `loader` | `subscribesTopic`, `targetSystem`, `targetTransport` | `connectorName` (defaults to `targetSystem`) |
+| `extractor` | `sourceSystem`, `publishesTopic` | `connectorName` (defaults to `sourceSystem`), `publishesContract` (PascalCase; defaults to PascalCase of topic) |
+| `loader` | `subscribesTopic`, `targetSystem` | `connectorName` (defaults to `targetSystem`) |
 | `aggregator` | `subscribesTopics` (comma-separated), `publishesTopic` | `publishesPort` (defaults to `out`), `publishesContract` |
-| `transactional-integration` | `providesApi`, `targetSystem`, `targetTransport` | `providesContract` (defaults to PascalCase of API), `connectorName` |
+| `transactional-integration` | `providesApi`, `targetSystem` | `providesContract` (defaults to PascalCase of API), `connectorName` |
 
 All kinds may also declare `consumesApis` (comma-separated).
 

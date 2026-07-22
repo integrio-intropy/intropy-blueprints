@@ -11,7 +11,7 @@ components are declared in a sibling SystemHost project, not here.
 - Block kind: loader
 - App id / component name: `{{ .name }}`
 - Subscribes: topic `{{ .subscribesTopic }}`
-- Loads into: external system `{{ .targetSystem }}` via the `{{ .connectorName | default .targetSystem }}` connector ({{ .targetTransport }})
+- Loads into: external system `{{ .targetSystem }}` via the `{{ .connectorName | default .targetSystem }}` connector (transport chosen at `intropy system create`)
 
 ## Scaffold record
 

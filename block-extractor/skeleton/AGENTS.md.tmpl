@@ -10,7 +10,7 @@ components are declared in a sibling SystemHost project, not here.
 - Framework: .NET 10, ASP.NET Minimal API worker
 - Block kind: extractor
 - App id / component name: `{{ .name }}`
-- Reads from: external system `{{ .sourceSystem }}` via the `{{ .connectorName | default .sourceSystem }}` connector ({{ .sourceTransport }})
+- Reads from: external system `{{ .sourceSystem }}` via the `{{ .connectorName | default .sourceSystem }}` connector (transport chosen at `intropy system create`)
 - Publishes: topic `{{ .publishesTopic }}`
 
 ## Scaffold record

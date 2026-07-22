@@ -1,8 +1,8 @@
 # {{ .name }}
 
 An Intropy **extractor block**: reads from the `{{ .sourceSystem }}` external
-system ({{ .sourceTransport }}) and publishes onto the `{{ .publishesTopic }}`
-topic.
+system and publishes onto the `{{ .publishesTopic }}` topic. How the source is
+reached (the transport) is chosen later, at `intropy system create`.
 
 This component's edge intent is recorded in `.intropy/scaffold.json`. Scaffold
 the other components of your system next to this folder, then generate a wired

@@ -1,8 +1,8 @@
 # {{ .name }}
 
 An Intropy **loader block**: subscribes to the `{{ .subscribesTopic }}` topic
-and loads the events into the `{{ .targetSystem }}` external system
-({{ .targetTransport }}).
+and loads the events into the `{{ .targetSystem }}` external system. How the
+target is reached (the transport) is chosen later, at `intropy system create`.
 
 This component's edge intent is recorded in `.intropy/scaffold.json`. Scaffold
 the other components of your system next to this folder, then generate a wired

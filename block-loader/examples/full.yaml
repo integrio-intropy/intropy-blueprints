@@ -3,6 +3,5 @@
 name: erp-order-loader
 subscribesTopic: order-fulfillment
 targetSystem: erp
-targetTransport: http
 connectorName: erp
 consumesApis: ""
