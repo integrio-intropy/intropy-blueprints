@@ -1,0 +1,15 @@
+using System.Text.Json;
+using {{ .projectName }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .projectName }}.Process.Steps;
+
+public class SerializeMessage : SerializeStep<LoadedMessage, Context>
+{
+    public override Task<(TechnicalStepResult<string> Result, Context Context)> ExecuteAsync(
+        LoadedMessage input, Context context, CancellationToken ct) =>
+        Task.FromResult<(TechnicalStepResult<string>, Context)>(
+            (new TechnicalStepResult<string>.Success(JsonSerializer.Serialize(input)), context));
+}

@@ -120,7 +120,7 @@ Module: `{{ .module }}`
 
 A **block template** scaffolds one component of an Intropy integration system
 and declares which topology block kind it is via the label
-`intropy.dev/block-kind: extractor | loader | aggregator |
+`intropy.dev/block-kind: extractor | loader |
 transactional-integration`. When that label is present, `intropy int create`
 hoists the template's **well-known edge parameters** into a structured
 `topology` section of the scaffolded project's `.intropy/scaffold.json`.
@@ -139,7 +139,6 @@ whose transport is still unset:
 |------|----------|----------|
 | `extractor` | `sourceSystem`, `publishesTopic` | `connectorName` (defaults to `sourceSystem`), `publishesContract` (PascalCase; defaults to PascalCase of topic) |
 | `loader` | `subscribesTopic`, `targetSystem` | `connectorName` (defaults to `targetSystem`) |
-| `aggregator` | `subscribesTopics` (comma-separated), `publishesTopic` | `publishesPort` (defaults to `out`), `publishesContract` |
 | `transactional-integration` | `providesApi`, `targetSystem` | `providesContract` (defaults to PascalCase of API), `connectorName` |
 
 All kinds may also declare `consumesApis` (comma-separated).

@@ -1,15 +1,38 @@
 # {{ .name }}
 
-An Intropy **extractor block**: reads from the `{{ .sourceSystem }}` external
-system and publishes onto the `{{ .publishesTopic }}` topic. How the source is
-reached (the transport) is chosen later, at `intropy system create`.
+An Intropy **extractor block**: a console job that reads records from the `{{ .sourceSystem }}`
+external system through the `{{ .connector }}` connector and publishes each raw record onto the
+`{{ .publishesTopic }}` topic. How the source is reached (the transport) is chosen later, at
+`intropy system create`.
 
-This component's edge intent is recorded in `.intropy/scaffold.json`. Scaffold
-the other components of your system next to this folder, then generate a wired
-SystemHost from the parent directory:
+This scaffold is **complete and runnable on its own** — no other components and no shared
+infrastructure required.
+
+## Run it standalone
+
+```bash
+task run          # seed the inbound folder, then dapr run one extraction pass and exit
+```
+
+`task run` seeds `./local/storage/inbound` with `local/sample-data/sample-source.json`, then runs the
+job once. It is a console one-shot job (no web endpoints): the runner lists the source connector,
+publishes each record onto the topic, deletes the consumed file, and exits — `dapr run` follows it
+down. The connector defaults to a **local file binding** (`bindings.localstorage`) reading that
+folder, and pub/sub is **in-memory** — both live in `local/dapr-components/`. Watch the logs to see
+each record published (there is no subscriber standalone; that is the job of downstream components in
+a system).
+
+## Run it as part of a system
+
+The same component runs unchanged inside a system; the SystemHost swaps the Dapr components folder at
+run time so `binding.{{ .connector }}` becomes the connector's real transport and `pubsub` becomes
+Redis. Scaffold the other components next to this folder, then from the parent directory:
 
 ```bash
 intropy system create -n <system-name>
 dotnet run --project <SystemName>.SystemHost -- check   # validate the topology
-dotnet run --project <SystemName>.SystemHost            # run the system locally
+dotnet run --project <SystemName>.SystemHost            # run the whole system locally
 ```
+
+This component's edge intent (block kind, connector, published topic) is recorded in
+`.intropy/scaffold.json`, which `intropy system create` reads to wire the SystemHost.

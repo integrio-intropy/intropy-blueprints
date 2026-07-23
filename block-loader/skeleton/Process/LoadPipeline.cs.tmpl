@@ -1,0 +1,30 @@
+using {{ .projectName }}.Process.Steps;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+using Intropy.Framework.Core.Pipeline.Core;
+
+namespace {{ .projectName }}.Process;
+
+// A minimal Intropy send pipeline: deserialize -> validate -> transform -> serialize -> write to the
+// connector. Built from the framework's Send blocks. Idempotency and business-incident routing are
+// intentionally omitted from this light scaffold; add them when your integration needs them.
+public class LoadPipeline(
+    DeserializeMessage deserializer,
+    ValidateMessage validator,
+    TransformMessage transformer,
+    SerializeMessage serializer,
+    WriteToConnector sender) : ISendPipeline<Context>
+{
+    public async Task<(StepResult<string> Result, Context Context)> Execute(
+        ReadOnlyMemory<byte> input, Context context, CancellationToken ct = default)
+    {
+        var (result, ctx, _) = await Pipeline.Start(input, context, ct)
+            .AddStep(deserializer)
+            .AddStep(validator)
+            .AddStep(transformer)
+            .AddStep(serializer)
+            .AddStep(sender);
+        return (result, ctx);
+    }
+}

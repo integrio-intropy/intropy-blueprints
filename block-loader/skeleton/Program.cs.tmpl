@@ -1,16 +1,46 @@
+using Dapr.Client;
+using {{ .projectName }}.Configuration;
+using {{ .projectName }}.Ingest;
+using {{ .projectName }}.Process;
+using {{ .projectName }}.Process.Steps;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Core.Configuration;
+
 // {{ .name }} — an Intropy loader block. It subscribes to the "{{ .subscribesTopic }}" topic and
-// loads the events into the {{ .targetSystem }} external system through the
-// "{{ .connectorName | default .targetSystem }}" connector. The worker below is deliberately
-// minimal: it reads the identity and runtime config the SystemHost's run backend injects, logs
-// them, and exposes an endpoint so its Dapr sidecar has an app to talk to. A real worker binds its
-// subscriptions and connectors from the same INTROPY__CONFIG contract.
+// loads each event into the {{ .targetSystem }} external system through the "{{ .connector }}"
+// connector. Standalone it runs entirely on local Dapr components (in-memory pub/sub + a localstorage
+// binding under ./local); under a SystemHost the same worker binds to the same component names but
+// the run backend swaps in shared infra (Redis pub/sub + the connector's real transport).
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDaprClient();
+builder.Services.AddLogging();
+
+builder.Services.AddIntropyFramework(x =>
+{
+    x.ComponentName = Constants.ComponentName;
+    x.ServiceNamespace = Constants.ServiceNamespace;
+});
+
+// The outbound connector. Standalone this resolves to a localstorage binding; under a SystemHost the
+// same "binding.{{ .connector }}" name resolves to the connector's real transport.
+builder.Services.AddSingleton<IFileAdapter>(sp =>
+    new LocalFileAdapter(
+        sp.GetRequiredService<DaprClient>(),
+        new FileAdapterOptions(Constants.ConnectorBindingName)));
+
+builder.Services.AddLoadPipeline((pipelineBuilder, sp) => pipelineBuilder
+    .WithDeserializer(new DeserializeMessage())
+    .WithValidator(new ValidateMessage())
+    .WithTransformer(new TransformMessage())
+    .WithSerializer(new SerializeMessage())
+    .WithSender(new WriteToConnector(sp.GetRequiredService<IFileAdapter>())));
+
 var app = builder.Build();
 
-var component = Environment.GetEnvironmentVariable("INTROPY__COMPONENT") ?? "{{ .name }}";
-var config = Environment.GetEnvironmentVariable("INTROPY__CONFIG");
-app.Logger.LogInformation("Intropy component {Component} started. Runtime config: {Config}", component, config);
+app.UseCloudEvents();
+app.MapEndpoints();
+app.MapSubscribeHandler();
 
-app.MapGet("/", () => component);
 app.Run();

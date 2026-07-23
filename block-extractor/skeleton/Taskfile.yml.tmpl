@@ -1,0 +1,60 @@
+version: "3"
+
+# Local-dev tasks for {{ .name }} — an Intropy extractor block. It reads records waiting at the
+# "binding.{{ .connector }}" localstorage binding (./local/storage/inbound) and publishes each onto
+# the "{{ .publishesTopic }}" topic on an in-memory Dapr pub/sub.
+#
+# This is a console one-shot job (no web endpoints): `run` deliberately omits --app-port so
+# `dapr run` follows the job down once it has drained the source and exits. Standalone, everything
+# is local — a local file source binding and in-memory pub/sub, no shared infra. Under a SystemHost
+# the same component runs against the connector's real transport and Redis pub/sub: the run backend
+# swaps the Dapr components folder, the code is unchanged.
+
+vars:
+  APP_ID: {{ .appId }}
+  DAPR_HTTP_PORT: '{{ "{{" }}.DAPR_HTTP_PORT | default "3500"}}'
+  DAPR_GRPC_PORT: '{{ "{{" }}.DAPR_GRPC_PORT | default "50001"}}'
+  LOG_LEVEL: '{{ "{{" }}.LOG_LEVEL | default "info"}}'
+  INBOUND_DIR: ./local/storage/inbound
+
+tasks:
+  build:
+    desc: Build the application
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - dotnet build
+
+  seed:
+    desc: Create the inbound folder and drop the sample source record into it
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - mkdir -p {{ "{{" }}.INBOUND_DIR}}
+      - cp local/sample-data/sample-source.json {{ "{{" }}.INBOUND_DIR}}/
+      - echo "Seeded {{ "{{" }}.INBOUND_DIR}} with sample-source.json"
+
+  run:
+    desc: Run one extraction pass via Dapr (in-memory pub/sub) and exit
+    deps: [seed]
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    env:
+      DOTNET_ENVIRONMENT: Development
+    cmds:
+      # No --app-port: a console job exits on completion and `dapr run` follows it down.
+      - >-
+        dapr run
+        --app-id {{ "{{" }}.APP_ID}}
+        --dapr-http-port {{ "{{" }}.DAPR_HTTP_PORT}}
+        --dapr-grpc-port {{ "{{" }}.DAPR_GRPC_PORT}}
+        --resources-path ./local/dapr-components
+        --placement-host-address=""
+        --scheduler-host-address=""
+        --log-level {{ "{{" }}.LOG_LEVEL}}
+        --
+        dotnet run
+
+  clean:
+    desc: Stop the Dapr app and remove local working folders
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - dapr stop --app-id {{ "{{" }}.APP_ID}} 2>/dev/null || true
+      - rm -rf ./local/storage

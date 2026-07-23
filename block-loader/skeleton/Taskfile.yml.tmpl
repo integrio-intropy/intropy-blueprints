@@ -1,0 +1,58 @@
+version: "3"
+
+# Local-dev tasks for {{ .name }} — an Intropy loader block. It subscribes to the
+# "{{ .subscribesTopic }}" topic on an in-memory Dapr pub/sub and writes each event out through the
+# "binding.{{ .connector }}" localstorage binding under ./local/storage/outbound.
+#
+# Standalone, everything is local — in-memory pub/sub and a local file binding, no shared infra.
+# Under a SystemHost the same component runs against Redis pub/sub and the connector's real
+# transport: the run backend swaps the Dapr components folder, the code is unchanged.
+
+vars:
+  APP_ID: {{ .appId }}
+  APP_PORT: '{{ "{{" }}.APP_PORT | default "5080"}}'
+  DAPR_HTTP_PORT: '{{ "{{" }}.DAPR_HTTP_PORT | default "3500"}}'
+  OUTBOUND_DIR: ./local/storage/outbound
+
+tasks:
+  build:
+    desc: Build the application
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - dotnet build
+
+  seed:
+    desc: Create the local outbound folder the connector writes into
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - mkdir -p {{ "{{" }}.OUTBOUND_DIR}}
+
+  run:
+    desc: Run the loader via Dapr (in-memory pub/sub) and keep it listening
+    deps: [seed]
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    env:
+      DOTNET_ENVIRONMENT: Development
+    cmds:
+      - >-
+        dapr run
+        --app-id {{ "{{" }}.APP_ID}}
+        --app-port {{ "{{" }}.APP_PORT}}
+        --dapr-http-port {{ "{{" }}.DAPR_HTTP_PORT}}
+        --resources-path ./local/dapr-components
+        --
+        dotnet run --urls http://localhost:{{ "{{" }}.APP_PORT}}
+
+  publish:
+    desc: Publish a sample message onto the subscribed topic (run while `task run` is up in another terminal)
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - 'curl -s -X POST http://localhost:{{ "{{" }}.APP_PORT}}/publish -H "Content-Type: application/json" -d @local/sample-data/sample-message.json'
+      - echo "Published — check {{ "{{" }}.OUTBOUND_DIR}} for the loaded file."
+
+  clean:
+    desc: Stop the Dapr app and remove local working folders
+    dir: "{{ "{{" }}.TASKFILE_DIR}}"
+    cmds:
+      - dapr stop --app-id {{ "{{" }}.APP_ID}} 2>/dev/null || true
+      - rm -rf ./local/storage

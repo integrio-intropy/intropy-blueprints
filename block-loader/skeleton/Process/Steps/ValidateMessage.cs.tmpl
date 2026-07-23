@@ -1,0 +1,28 @@
+using {{ .projectName }}.Model;
+using Intropy.Contracts.BusinessIncidentService;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .projectName }}.Process.Steps;
+
+public class ValidateMessage : ValidateStep<Message, Context>
+{
+    public override Task<(BusinessStepResult<Message> Result, Context Context)> ExecuteAsync(
+        Message input, Context context, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(input.Id))
+        {
+            var incident = new BusinessIncidentData
+            {
+                Description = "Id is required",
+                Context = new Dictionary<string, string>(),
+            };
+            return Task.FromResult<(BusinessStepResult<Message>, Context)>(
+                (new BusinessStepResult<Message>.Failure(incident), context));
+        }
+
+        return Task.FromResult<(BusinessStepResult<Message>, Context)>(
+            (new BusinessStepResult<Message>.Success(input), context));
+    }
+}

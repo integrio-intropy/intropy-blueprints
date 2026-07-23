@@ -1,16 +1,52 @@
-// {{ .name }} — an Intropy extractor block. It reads from the {{ .sourceSystem }} external system
-// through the "{{ .connectorName | default .sourceSystem }}" connector and publishes onto the
-// "{{ .publishesTopic }}" topic. The worker below is deliberately minimal: it reads the identity
-// and runtime config the SystemHost's run backend injects, logs them, and exposes an endpoint so
-// its Dapr sidecar has an app to talk to. A real worker binds its subscriptions, publishes, and
-// connectors from the same INTROPY__CONFIG contract.
+using Dapr.Client;
+using Dapr.Messaging.PublishSubscribe.Extensions;
+using {{ .projectName }}.Configuration;
+using {{ .projectName }}.Receive;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.TransactionalIntegration.Receive;
+using Intropy.Framework.Core.Configuration;
+using Intropy.Framework.Hosting.TransactionalIntegration.Job;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+// {{ .name }} — an Intropy extractor block. It is a console job that reads records waiting at the
+// {{ .sourceSystem }} external system through the "{{ .connector }}" connector and publishes each
+// raw record onto the "{{ .publishesTopic }}" topic. Standalone it runs entirely on local Dapr
+// components (a localstorage source binding + an in-memory pub/sub); under a SystemHost the same
+// worker binds to the same component names but the run backend swaps in shared infra (the
+// connector's real transport + Redis pub/sub). The job drains the source once and exits.
 
-var component = Environment.GetEnvironmentVariable("INTROPY__COMPONENT") ?? "{{ .name }}";
-var config = Environment.GetEnvironmentVariable("INTROPY__CONFIG");
-app.Logger.LogInformation("Intropy component {Component} started. Runtime config: {Config}", component, config);
+var services = new ServiceCollection();
 
-app.MapGet("/", () => component);
-app.Run();
+services.AddLogging(builder => builder.AddConsole());
+
+services.AddSingleton(_ => new DaprClientBuilder().Build());
+services.AddDaprPubSubClient();
+
+services.AddIntropyFramework(x =>
+{
+    x.ComponentName = Constants.ComponentName;
+    x.ServiceNamespace = Constants.ServiceNamespace;
+});
+
+services.AddTransactionalIntegration(options =>
+{
+    options.DaprPubSubName = Constants.PubSubName;
+    options.DaprTopicName = Constants.PublishTopic;
+});
+
+// The inbound connector this extractor reads from. Standalone it is a localstorage binding reading
+// files under ./local/storage/inbound; under a SystemHost the same "binding.{{ .connector }}" name
+// resolves to the connector's real transport.
+services.AddKeyedSingleton<IFileAdapter>(Constants.SourceFileAdapterKey, (sp, _) =>
+    new LocalFileAdapter(
+        sp.GetRequiredService<DaprClient>(),
+        new FileAdapterOptions(Constants.ConnectorBindingName)));
+
+services.AddSingleton<ISourceLister, SourceLister>();
+
+services.AddReceivePipeline();
+
+var serviceProvider = services.BuildServiceProvider();
+var runner = serviceProvider.GetRequiredService<TransactionalIntegrationRunner>();
+return await runner.RunAsync();

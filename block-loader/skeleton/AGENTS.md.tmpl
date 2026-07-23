@@ -1,37 +1,63 @@
 # Agent Instructions
 
-This project is an Intropy **loader block**: a .NET worker that subscribes to a
-system topic and loads the events into an external system through an outbound
-connector. It is one component of an integration system; the edges between
-components are declared in a sibling SystemHost project, not here.
+This project is an Intropy **loader block**: a .NET worker that subscribes to a system topic and
+loads each event into an external system through an outbound connector. It is a complete, runnable
+integration on its own, and also composes into a larger system via a sibling SystemHost.
 
 ## Project overview
 
-- Framework: .NET 10, ASP.NET Minimal API worker
+- Framework: .NET 10, ASP.NET Minimal API worker, Intropy Framework Blocks (send pipeline)
 - Block kind: loader
 - App id / component name: `{{ .name }}`
-- Subscribes: topic `{{ .subscribesTopic }}`
-- Loads into: external system `{{ .targetSystem }}` via the `{{ .connectorName | default .targetSystem }}` connector (transport chosen at `intropy system create`)
+- Subscribes: topic `{{ .subscribesTopic }}` on pub/sub component `pubsub`
+- Loads into: external system `{{ .targetSystem }}` via the `{{ .connector }}` connector — Dapr
+  binding component `binding.{{ .connector }}` (transport chosen at `intropy system create`)
+
+## The two run modes (one binary, swapped components folder)
+
+The worker always binds to **stable Dapr component names** — `pubsub` and `binding.{{ .connector }}`.
+What those names resolve to is decided entirely by which components folder the Dapr sidecar loads
+(`--resources-path`):
+
+- **Standalone** (`task run`): `./local/dapr-components/` — `pubsub` is `pubsub.in-memory`,
+  `binding.{{ .connector }}` is `bindings.localstorage` writing to `./local/storage/outbound`.
+- **Under a SystemHost**: the run backend generates a components folder and points the sidecar at it,
+  so `pubsub` becomes Redis and `binding.{{ .connector }}` becomes the connector's real transport.
+  The code is identical in both; do not hard-code anything that differs between them here.
+
+## Important files
+
+- `Program.cs` — host + DI: Dapr client, `AddIntropyFramework`, the connector `IFileAdapter`, and the
+  load pipeline registered as `ISendPipeline<Context>`.
+- `Configuration/Constants.cs` — the stable component names (`pubsub`, `binding.{{ .connector }}`)
+  and the subscribed topic. These must match on both sides of the folder swap.
+- `Process/` — the send pipeline (deserialize → validate → transform → serialize → write to
+  connector) built from framework Send blocks: `LoadPipeline` (the pipeline), `LoadPipelineBuilder`
+  (fluent builder), `ServiceCollectionExtensions` (`AddLoadPipeline`), and one step class per file
+  under `Steps/`. Idempotency / business-incident routing are intentionally omitted from this light
+  scaffold.
+- `Ingest/Endpoints.cs` — `POST /subscribe` (the Dapr subscription) and `POST /publish` (a standalone
+  helper that seeds the subscribed topic).
+- `Model/Messages.cs` — placeholder payload records; replace with the system's real contract.
+- `local/dapr-components/` — the standalone components (`pubsub`, `binding.{{ .connector }}`).
+- `Taskfile.yml` — `task run`, `task publish`, `task clean`.
 
 ## Scaffold record
 
-`.intropy/scaffold.json` carries this component's edge intent in its `topology`
-section (block kind, subscriptions, connectors). `intropy system create`
-reads the records of all sibling components to generate a wired SystemHost —
-do not edit the `topology` section by hand; re-scaffold instead.
+`.intropy/scaffold.json` carries this component's edge intent in its `topology` section (block kind,
+subscribed topic, connector). `intropy system create` reads the records of all sibling components to
+generate a wired SystemHost — do not edit the `topology` section by hand; re-scaffold instead.
 
-## Runtime contract
+The folder name, csproj name, and Dapr app-id must all stay `{{ .name }}` — the SystemHost resolves
+this project by that convention (`../{{ .name }}/{{ .name }}.csproj`).
 
-The SystemHost's run backend starts this worker with:
+## Build and run
 
-- `INTROPY__COMPONENT` — the component name.
-- `INTROPY__CONFIG` — path to `{{ .name }}.intropy.json`, the generated runtime
-  config carrying the component's subscriptions and connector bindings
-  (including the pub/sub component name, which is a system-level decision made
-  by the SystemHost).
-
-The folder name, csproj name, and Dapr app-id must all stay `{{ .name }}` —
-the SystemHost resolves this project by that convention (`../{{ .name }}/{{ .name }}.csproj`).
+```bash
+task build        # dotnet build
+task run          # dapr run --resources-path ./local/dapr-components -- dotnet run
+task publish      # publish a sample event onto the subscribed topic (while `task run` is up)
+```
 
 ## Wiring into a system
 
@@ -39,10 +65,5 @@ From the parent directory that holds all component folders:
 
 ```bash
 intropy system create -n <system-name>
-```
-
-Then validate the topology:
-
-```bash
 dotnet run --project <SystemName>.SystemHost -- check
 ```

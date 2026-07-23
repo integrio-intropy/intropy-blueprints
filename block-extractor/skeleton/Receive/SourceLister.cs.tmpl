@@ -1,0 +1,20 @@
+using {{ .projectName }}.Configuration;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.TransactionalIntegration.Receive;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace {{ .projectName }}.Receive;
+
+// Feeds the receive pipeline the list of items waiting at the source connector. The runner calls
+// this once, then runs the pipeline once per returned item.
+public class SourceLister([FromKeyedServices(Constants.SourceFileAdapterKey)] IFileAdapter fileAdapter)
+    : ISourceLister
+{
+    public async Task<IReadOnlyList<SourceItemInfo>> ListItemsAsync(CancellationToken cancellationToken = new())
+    {
+        var files = await fileAdapter.ListAsync();
+        return files
+            .Select(f => new SourceItemInfo(f.FileName))
+            .ToList();
+    }
+}

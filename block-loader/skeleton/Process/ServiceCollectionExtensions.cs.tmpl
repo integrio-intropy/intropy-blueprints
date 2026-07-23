@@ -1,0 +1,19 @@
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send;
+
+namespace {{ .projectName }}.Process;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddLoadPipeline(
+        this IServiceCollection services,
+        Func<LoadPipelineBuilder, IServiceProvider, LoadPipelineBuilder> configure)
+    {
+        services.AddSingleton<ISendPipeline<Context>>(sp =>
+        {
+            var builder = new LoadPipelineBuilder();
+            return configure(builder, sp).Build();
+        });
+        return services;
+    }
+}

@@ -1,0 +1,15 @@
+namespace {{ .projectName }}.Configuration;
+
+public static class Constants
+{
+    public const string ComponentName = "{{ .name }}";
+    public const string ServiceNamespace = "intropy";
+
+    // Stable Dapr component names. Standalone they resolve from ./local/dapr-components (in-memory
+    // pub/sub + a localstorage binding); under a SystemHost the identical names resolve to shared
+    // infra (Redis pub/sub, the connector's real transport) because the run backend swaps only the
+    // components folder. The names must therefore never vary between the two.
+    public const string PubSubName = "pubsub";
+    public const string SubscribeTopic = "{{ .subscribesTopic }}";
+    public const string ConnectorBindingName = "binding.{{ .connector }}";
+}

@@ -1,0 +1,53 @@
+using {{ .projectName }}.Process.Steps;
+
+namespace {{ .projectName }}.Process;
+
+public class LoadPipelineBuilder
+{
+    private DeserializeMessage? _deserializer;
+    private ValidateMessage? _validator;
+    private TransformMessage? _transformer;
+    private SerializeMessage? _serializer;
+    private WriteToConnector? _sender;
+
+    public LoadPipelineBuilder WithDeserializer(DeserializeMessage deserializer)
+    {
+        _deserializer = deserializer;
+        return this;
+    }
+
+    public LoadPipelineBuilder WithValidator(ValidateMessage validator)
+    {
+        _validator = validator;
+        return this;
+    }
+
+    public LoadPipelineBuilder WithTransformer(TransformMessage transformer)
+    {
+        _transformer = transformer;
+        return this;
+    }
+
+    public LoadPipelineBuilder WithSerializer(SerializeMessage serializer)
+    {
+        _serializer = serializer;
+        return this;
+    }
+
+    public LoadPipelineBuilder WithSender(WriteToConnector sender)
+    {
+        _sender = sender;
+        return this;
+    }
+
+    public LoadPipeline Build()
+    {
+        if (_deserializer is null) throw new InvalidOperationException($"{nameof(DeserializeMessage)} must be configured");
+        if (_validator is null) throw new InvalidOperationException($"{nameof(ValidateMessage)} must be configured");
+        if (_transformer is null) throw new InvalidOperationException($"{nameof(TransformMessage)} must be configured");
+        if (_serializer is null) throw new InvalidOperationException($"{nameof(SerializeMessage)} must be configured");
+        if (_sender is null) throw new InvalidOperationException($"{nameof(WriteToConnector)} must be configured");
+
+        return new LoadPipeline(_deserializer, _validator, _transformer, _serializer, _sender);
+    }
+}

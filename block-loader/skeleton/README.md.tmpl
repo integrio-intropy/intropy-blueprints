@@ -1,15 +1,39 @@
 # {{ .name }}
 
-An Intropy **loader block**: subscribes to the `{{ .subscribesTopic }}` topic
-and loads the events into the `{{ .targetSystem }}` external system. How the
+An Intropy **loader block**: subscribes to the `{{ .subscribesTopic }}` topic and loads each event
+into the `{{ .targetSystem }}` external system through the `{{ .connector }}` connector. How the
 target is reached (the transport) is chosen later, at `intropy system create`.
 
-This component's edge intent is recorded in `.intropy/scaffold.json`. Scaffold
-the other components of your system next to this folder, then generate a wired
-SystemHost from the parent directory:
+This scaffold is **complete and runnable on its own** — no other components and no shared
+infrastructure required.
+
+## Run it standalone
+
+```bash
+task run          # dapr run with in-memory pub/sub + a localstorage connector binding
+```
+
+Then, from another terminal, drive it end-to-end:
+
+```bash
+task publish      # publishes local/sample-data/sample-message.json onto the subscribed topic
+ls local/storage/outbound   # the loaded file the connector wrote
+```
+
+Standalone, the connector defaults to a **local file binding** (`bindings.localstorage`) writing to
+`./local/storage/outbound`, and pub/sub is **in-memory** — both live in `local/dapr-components/`.
+
+## Run it as part of a system
+
+The same component runs unchanged inside a system; the SystemHost swaps the Dapr components folder at
+run time so `pubsub` becomes Redis and `binding.{{ .connector }}` becomes the connector's real
+transport. Scaffold the other components next to this folder, then from the parent directory:
 
 ```bash
 intropy system create -n <system-name>
 dotnet run --project <SystemName>.SystemHost -- check   # validate the topology
-dotnet run --project <SystemName>.SystemHost            # run the system locally
+dotnet run --project <SystemName>.SystemHost            # run the whole system locally
 ```
+
+This component's edge intent (block kind, subscribed topic, connector) is recorded in
+`.intropy/scaffold.json`, which `intropy system create` reads to wire the SystemHost.

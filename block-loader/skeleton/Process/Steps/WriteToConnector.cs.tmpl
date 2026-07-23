@@ -1,0 +1,18 @@
+using System.Text;
+using Intropy.Framework.Adapters.File;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .projectName }}.Process.Steps;
+
+public class WriteToConnector(IFileAdapter connector) : SendStep<Context>
+{
+    public override async Task<(BusinessStepResult<string> Result, Context Context)> ExecuteAsync(
+        string input, Context context, CancellationToken ct)
+    {
+        var fileName = $"loaded-{Guid.NewGuid():N}.json";
+        await connector.WriteAsync(fileName, input, Encoding.UTF8);
+        return (new BusinessStepResult<string>.Success(fileName), context);
+    }
+}

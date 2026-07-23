@@ -1,0 +1,13 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  # Must match Constants.ConnectorBindingName and the component the SystemHost generates for this
+  # connector. Standalone it is a localstorage binding reading files the extractor picks up; the
+  # SystemHost overrides it with the connector's real transport at run time by swapping the folder.
+  name: binding.{{ .connector }}
+spec:
+  type: bindings.localstorage
+  version: v1
+  metadata:
+    - name: rootPath
+      value: "./local/storage/inbound"

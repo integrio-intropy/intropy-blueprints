@@ -1,5 +1,0 @@
-# Render fixture: required parameters only.
-#   intropy int create block-aggregator -o /tmp/order-aggregator -f block-aggregator/examples/minimal.yaml --version main --no-input
-name: order-aggregator
-subscribesTopics: order-raw,stock-raw
-publishesTopic: order-fulfillment

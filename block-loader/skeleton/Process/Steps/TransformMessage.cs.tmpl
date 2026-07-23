@@ -1,0 +1,15 @@
+using {{ .projectName }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send.Steps;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .projectName }}.Process.Steps;
+
+public class TransformMessage : TransformStep<Message, LoadedMessage, Context>
+{
+    public override Task<(TechnicalStepResult<LoadedMessage> Result, Context Context)> ExecuteAsync(
+        Message input, Context context, CancellationToken ct) =>
+        Task.FromResult<(TechnicalStepResult<LoadedMessage>, Context)>(
+            (new TechnicalStepResult<LoadedMessage>.Success(
+                new LoadedMessage(input.Id, input.Payload, DateTimeOffset.UtcNow)), context));
+}

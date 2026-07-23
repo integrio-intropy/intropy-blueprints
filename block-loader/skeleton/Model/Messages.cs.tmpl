@@ -1,0 +1,9 @@
+namespace {{ .projectName }}.Model;
+
+// The event this loader consumes off the "{{ .subscribesTopic }}" topic. This is a placeholder shape;
+// replace it with your system's real contract record — `intropy system create` links a shared
+// Contracts project into this component so every worker on the topic agrees on the payload.
+public record Message(string Id, string Payload);
+
+// What gets written out to the target system through the connector.
+public record LoadedMessage(string Id, string Payload, DateTimeOffset LoadedAt);

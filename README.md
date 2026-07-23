@@ -20,7 +20,6 @@ them into a SystemHost (see the "Block templates" section of `CLAUDE.md`):
 
 - **`block-extractor/`** — reads from an external system and publishes a topic.
 - **`block-loader/`** — subscribes to a topic and loads into an external system.
-- **`block-aggregator/`** — subscribes to topics and publishes an aggregated topic.
 - **`system-host/`** — the Aspire SystemHost that declares the system's
   components and edges; scaffolded by `intropy system create`.
 

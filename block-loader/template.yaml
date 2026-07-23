@@ -49,3 +49,5 @@ spec:
   values:
     appId: '{{ .name }}'
     projectName: '{{ .name | replace "-" " " | title | replace " " "" }}'
+    # The outbound connector's local port name; the Dapr binding component is `binding.<connector>`.
+    connector: '{{ .connectorName | default .targetSystem }}'

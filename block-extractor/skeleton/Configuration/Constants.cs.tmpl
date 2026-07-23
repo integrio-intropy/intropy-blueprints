@@ -1,0 +1,20 @@
+namespace {{ .projectName }}.Configuration;
+
+public static class Constants
+{
+    public const string ComponentName = "{{ .name }}";
+    public const string ServiceNamespace = "intropy";
+
+    // Stable Dapr component names. Standalone they resolve from ./local/dapr-components (a
+    // localstorage source binding + in-memory pub/sub); under a SystemHost the identical names
+    // resolve to shared infra (the connector's real transport, Redis pub/sub) because the run
+    // backend swaps only the components folder. The names must therefore never vary between the two.
+    public const string PubSubName = "pubsub";
+    public const string PublishTopic = "{{ .publishesTopic }}";
+    public const string ConnectorBindingName = "binding.{{ .connector }}";
+
+    // The keyed-adapter key for the source connector and the context metadata key the receive
+    // steps stamp the source item id under.
+    public const string SourceFileAdapterKey = "source";
+    public const string ContextKeyFileName = "file_name";
+}

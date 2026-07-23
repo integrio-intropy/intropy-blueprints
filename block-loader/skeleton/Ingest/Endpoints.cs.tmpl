@@ -1,0 +1,60 @@
+using Dapr.Client;
+using {{ .projectName }}.Configuration;
+using {{ .projectName }}.Model;
+using Intropy.Framework.Blocks.Shared;
+using Intropy.Framework.Blocks.TransactionalIntegration.Send;
+using Intropy.Framework.Core.Pipeline.Abstractions.Results;
+
+namespace {{ .projectName }}.Ingest;
+
+public static class Endpoints
+{
+    public static IEndpointRouteBuilder MapEndpoints(this IEndpointRouteBuilder endpoints)
+    {
+        // The subscriber Dapr invokes for each message on "{{ .subscribesTopic }}". It runs the
+        // message through the load pipeline, which writes it out through the connector. The status
+        // string maps to Dapr's ack semantics (SUCCESS = ack, RETRY = redeliver, DROP = drop).
+        endpoints.MapPost("/subscribe", async (
+                HttpContext ctx,
+                ISendPipeline<Context> pipeline,
+                ILogger<Program> logger,
+                CancellationToken ct) =>
+            {
+                using var ms = new MemoryStream();
+                await ctx.Request.Body.CopyToAsync(ms, ct);
+
+                var (result, _) = await pipeline.Execute(
+                    new ReadOnlyMemory<byte>(ms.ToArray()),
+                    new Context(new Dictionary<string, string>()),
+                    ct);
+
+                return result switch
+                {
+                    StepResult<string>.Success => Results.Ok(new { status = "SUCCESS" }),
+                    StepResult<string>.BusinessFailure => Results.Ok(new { status = "DROP" }),
+                    StepResult<string>.TechnicalFailure => Results.Ok(new { status = "RETRY" }),
+                    _ => Results.Ok(new { status = "DROP" }),
+                };
+            })
+            .WithTopic(Constants.PubSubName, Constants.SubscribeTopic)
+            .WithName("subscribe");
+
+        // Standalone helper: publishes a sample message onto the subscribed topic so you can drive
+        // the loader end-to-end by yourself. In a running system the events arrive from upstream
+        // components instead, and this route is just a convenience.
+        endpoints.MapPost("/publish", async (
+                Message message,
+                DaprClient dapr,
+                ILogger<Program> logger,
+                CancellationToken ct) =>
+            {
+                await dapr.PublishEventAsync(Constants.PubSubName, Constants.SubscribeTopic, message, ct);
+                logger.LogInformation("Published {Id} to {PubSub}/{Topic}",
+                    message.Id, Constants.PubSubName, Constants.SubscribeTopic);
+                return Results.Accepted();
+            })
+            .WithName("publish");
+
+        return endpoints;
+    }
+}

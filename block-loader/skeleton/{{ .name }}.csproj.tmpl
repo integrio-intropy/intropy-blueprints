@@ -1,8 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>{{ .projectName }}Worker</RootNamespace>
-    </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>{{ .projectName }}</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapr.AspNetCore" Version="1.17.9" />
+    <PackageReference Include="Intropy.Contracts" Version="0.1.0" />
+    <PackageReference Include="Intropy.Framework.Adapters" Version="0.2.2" />
+    <PackageReference Include="Intropy.Framework.Blocks" Version="0.2.2" />
+  </ItemGroup>
+
 </Project>
